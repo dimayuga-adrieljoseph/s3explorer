@@ -1,4 +1,4 @@
-import { CheckSquare, X, Trash2 } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 
 interface BatchActionsBarProps {
     selectedCount: number;
@@ -13,45 +13,33 @@ export function BatchActionsBar({
 }: BatchActionsBarProps) {
     if (selectedCount === 0) return null;
 
-    const selectionLabel = `${selectedCount} ${selectedCount === 1 ? 'item' : 'items'} selected`;
-
     return (
-        <div className="fixed bottom-4 inset-x-0 z-50 px-3 sm:px-4 animate-slideUp">
-            <div className="mx-auto w-full max-w-xl rounded-xl border border-border bg-background-secondary/95 backdrop-blur-sm shadow-lg px-3 py-3 sm:px-4 sm:py-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg border border-border bg-background-tertiary flex items-center justify-center flex-shrink-0">
-                            <CheckSquare className="w-4 h-4 text-foreground-secondary" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground-muted">
-                                Selection
-                            </p>
-                            <p className="text-sm font-medium text-foreground truncate">
-                                {selectionLabel}
-                            </p>
-                        </div>
-                    </div>
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-slideUp">
+            <div className="flex items-center gap-2 px-3 py-2 bg-background-secondary border border-border rounded-md shadow-lg">
+                <span className="text-sm text-foreground-secondary mr-2">
+                    {selectedCount} selected
+                </span>
 
-                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
-                        <button
-                            onClick={onClearSelection}
-                            className="btn btn-secondary h-9 px-3 text-sm"
-                            aria-label="Clear selection"
-                        >
-                            <X className="w-4 h-4" aria-hidden="true" />
-                            Clear
-                        </button>
-                        <button
-                            onClick={onDeleteSelected}
-                            className="btn btn-danger h-9 px-3 text-sm"
-                            aria-label="Delete selected items"
-                        >
-                            <Trash2 className="w-4 h-4" aria-hidden="true" />
-                            Delete
-                        </button>
-                    </div>
-                </div>
+
+
+                <button
+                    onClick={onDeleteSelected}
+                    className="btn btn-ghost btn-sm gap-1.5 text-accent-red hover:bg-accent-red/10"
+                    aria-label="Delete selected"
+                >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                </button>
+
+                <div className="w-px h-5 bg-border mx-1" />
+
+                <button
+                    onClick={onClearSelection}
+                    className="btn btn-ghost btn-icon w-7 h-7"
+                    aria-label="Clear selection"
+                >
+                    <X className="w-4 h-4" />
+                </button>
             </div>
         </div>
     );
