@@ -54,12 +54,3 @@ export const KEYBOARD_SHORTCUTS = {
   NEW_FOLDER: 'n',          // Cmd/Ctrl + Shift + N
   REFRESH: 'r',             // Cmd/Ctrl + R (with shift to avoid browser refresh)
 } as const;
-
-// Preview Configuration
-export const PREVIEW = {
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB max for preview
-  SUPPORTED_IMAGE_TYPES: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'bmp'],
-  SUPPORTED_TEXT_TYPES: ['txt', 'md', 'json', 'xml', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'log', 'sh', 'bash', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'hpp'],
-  SUPPORTED_VIDEO_TYPES: ['mp4', 'webm', 'ogg'],
-  SUPPORTED_AUDIO_TYPES: ['mp3', 'wav', 'ogg', 'aac', 'm4a'],
-} as const;
