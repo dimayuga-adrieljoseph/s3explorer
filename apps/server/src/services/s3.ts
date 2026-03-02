@@ -16,7 +16,8 @@ import {
   AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { connections, ConnectionRecord } from './db.js';
+import { Readable } from 'stream';
+import { connections } from './db.js';
 import { unpackAndDecrypt } from './crypto.js';
 import type { BucketInfo, ObjectInfo, ObjectMetadata } from '../types/index.js';
 
@@ -168,6 +169,41 @@ export async function getObjectStream(bucket: string, key: string) {
   return response.Body;
 }
 
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+async function listAllObjectKeys(client: S3Client, bucket: string, prefix: string): Promise<string[]> {
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    }));
+
+    for (const obj of response.Contents || []) {
+      if (obj.Key) {
+        keys.push(obj.Key);
+      }
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  return keys;
+}
+
+async function deleteObjectWithClient(client: S3Client, bucket: string, key: string): Promise<void> {
+  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+}
+
 // Size threshold for multipart upload (100MB)
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
 // Part size for multipart upload (5MB minimum, using 10MB)
@@ -192,6 +228,24 @@ export async function uploadObject(
     Key: key,
     Body: body,
     ContentType: contentType,
+  });
+  await client.send(command);
+}
+
+export async function uploadObjectStream(
+  bucket: string,
+  key: string,
+  body: Readable,
+  contentType?: string,
+  contentLength?: number
+): Promise<void> {
+  const client = getS3Client();
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+    ContentLength: contentLength,
   });
   await client.send(command);
 }
@@ -276,23 +330,22 @@ async function uploadMultipart(
 
 export async function deleteObject(bucket: string, key: string): Promise<void> {
   const client = getS3Client();
-  const command = new DeleteObjectCommand({ Bucket: bucket, Key: key });
-  await client.send(command);
+  await deleteObjectWithClient(client, bucket, key);
 }
 
 export async function deleteFolder(bucket: string, prefix: string): Promise<void> {
   const client = getS3Client();
+  const keys = await listAllObjectKeys(client, bucket, prefix);
 
-  const listCommand = new ListObjectsV2Command({
-    Bucket: bucket,
-    Prefix: prefix,
-  });
-  const response = await client.send(listCommand);
-
-  for (const obj of response.Contents || []) {
-    if (obj.Key) {
-      await deleteObject(bucket, obj.Key);
-    }
+  for (const keyBatch of chunk(keys, 1000)) {
+    const deleteCommand = new DeleteObjectsCommand({
+      Bucket: bucket,
+      Delete: {
+        Objects: keyBatch.map(Key => ({ Key })),
+        Quiet: true,
+      },
+    });
+    await client.send(deleteCommand);
   }
 }
 
@@ -305,25 +358,21 @@ export async function renameObject(
   const isFolder = oldKey.endsWith('/');
 
   if (isFolder) {
-    const listCommand = new ListObjectsV2Command({
-      Bucket: bucket,
-      Prefix: oldKey,
-    });
-    const response = await client.send(listCommand);
+    const keys = await listAllObjectKeys(client, bucket, oldKey);
 
-    for (const obj of response.Contents || []) {
-      if (obj.Key) {
-        const newObjKey = obj.Key.replace(oldKey, newKey);
+    for (const key of keys) {
+      const newObjKey = key.startsWith(oldKey)
+        ? `${newKey}${key.slice(oldKey.length)}`
+        : key.replace(oldKey, newKey);
 
-        const copyCommand = new CopyObjectCommand({
-          Bucket: bucket,
-          CopySource: encodeURIComponent(`${bucket}/${obj.Key}`),
-          Key: newObjKey,
-        });
-        await client.send(copyCommand);
+      const copyCommand = new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: encodeURIComponent(`${bucket}/${key}`),
+        Key: newObjKey,
+      });
+      await client.send(copyCommand);
 
-        await deleteObject(bucket, obj.Key);
-      }
+      await deleteObjectWithClient(client, bucket, key);
     }
   } else {
     const copyCommand = new CopyObjectCommand({
@@ -333,7 +382,7 @@ export async function renameObject(
     });
     await client.send(copyCommand);
 
-    await deleteObject(bucket, oldKey);
+    await deleteObjectWithClient(client, bucket, oldKey);
   }
 }
 
@@ -346,7 +395,7 @@ export async function copyObject(
   const client = getS3Client();
   const command = new CopyObjectCommand({
     Bucket: destBucket,
-    CopySource: `${sourceBucket}/${sourceKey}`,
+    CopySource: encodeURIComponent(`${sourceBucket}/${sourceKey}`),
     Key: destKey,
   });
   await client.send(command);

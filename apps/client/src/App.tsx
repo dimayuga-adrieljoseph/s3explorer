@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Folder, Database, Download, Edit3, Trash2 } from 'lucide-react';
+import { Folder, Database, Download, Edit3, Trash2, Eye } from 'lucide-react';
 import * as api from './api';
 import type { Bucket, S3Object, ToastState, ContextMenuState } from './types';
 import { getFileName } from './utils/fileUtils';
@@ -21,7 +21,7 @@ import { CreateFolderModal } from './components/modals/CreateFolderModal';
 import { RenameModal } from './components/modals/RenameModal';
 import { DeleteModal } from './components/modals/DeleteModal';
 import { DeleteBucketModal } from './components/modals/DeleteBucketModal';
-import { PreviewModal } from './components/modals/PreviewModal';
+import { PreviewModal, isPreviewable } from './components/modals/PreviewModal';
 import { CommandPalette } from './components/CommandPalette';
 import { LoginPage } from './components/LoginPage';
 import { SetupPage } from './components/SetupPage';
@@ -85,6 +85,7 @@ export default function App() {
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigationStateRef = useRef<{ bucket: string | null; path: string }>({ bucket: null, path: '' });
 
   // Check auth on mount
   useEffect(() => {
@@ -200,13 +201,31 @@ export default function App() {
     if (selectedBucket && authenticated) loadObjects();
   }, [selectedBucket, currentPath, authenticated, loadObjects]);
 
+  useEffect(() => {
+    navigationStateRef.current = { bucket: selectedBucket, path: currentPath };
+  }, [selectedBucket, currentPath]);
+
   // Browser history integration for folder navigation
+  const isPopState = useRef(false);
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
+      const nextBucket = state?.bucket || null;
+      const nextPath = state?.path || '';
+
+      // Ignore no-op popstate transitions
+      if (
+        navigationStateRef.current.bucket === nextBucket &&
+        navigationStateRef.current.path === nextPath
+      ) {
+        return;
+      }
+
+      isPopState.current = true;
+
       if (state) {
-        setSelectedBucket(state.bucket || null);
-        setCurrentPath(state.path || '');
+        setSelectedBucket(nextBucket);
+        setCurrentPath(nextPath);
       } else {
         // No state means we're at the initial page
         setSelectedBucket(null);
@@ -220,7 +239,6 @@ export default function App() {
 
   // Push state when bucket or path changes (but not on initial load or popstate)
   const isInitialMount = useRef(true);
-  const isPopState = useRef(false);
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -376,12 +394,32 @@ export default function App() {
     }
   };
 
+  const handlePreview = useCallback((obj: S3Object) => {
+    if (!selectedBucket || obj.isFolder) return;
+
+    const fileName = getFileName(obj.key);
+    if (!isPreviewable(fileName, obj.size)) {
+      showToastMsg('Preview not available for this file type', 'error');
+      return;
+    }
+
+    setShowPreview(obj);
+    setPreviewUrl(api.getPreviewUrl(selectedBucket, obj.key));
+  }, [selectedBucket]);
+
 
 
   const closePreview = () => {
     setShowPreview(null);
     setPreviewUrl(null);
   };
+
+  useEffect(() => {
+    if (showPreview) {
+      setShowPreview(null);
+      setPreviewUrl(null);
+    }
+  }, [selectedBucket, currentPath, showPreview]);
 
   // Selection handlers for batch operations
   const handleSelect = useCallback((key: string, selected: boolean) => {
@@ -691,6 +729,13 @@ export default function App() {
       {contextMenu && (
         <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}>
 
+          {!contextMenu.object.isFolder && isPreviewable(getFileName(contextMenu.object.key), contextMenu.object.size) && (
+            <ContextMenuItem
+              icon={Eye}
+              label="Preview"
+              onClick={() => { handlePreview(contextMenu.object); setContextMenu(null); }}
+            />
+          )}
           {!contextMenu.object.isFolder && (
             <ContextMenuItem
               icon={Download}

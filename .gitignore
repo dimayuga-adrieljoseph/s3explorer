@@ -30,4 +30,12 @@ coverage/
 tmp/
 temp/
 
+# Runtime data (credentials/session/key material)
+data/
+apps/server/data/
+*.db
+*.db-shm
+*.db-wal
+encryption.key
+
 # v 1.0

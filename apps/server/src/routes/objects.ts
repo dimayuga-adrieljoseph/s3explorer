@@ -1,15 +1,22 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import * as s3 from '../services/s3.js';
 
 const router = Router();
 
-// File size limits
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB limit (multipart handles larger files)
+// File size limit (per file)
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+const DATA_DIR = process.env.DATA_DIR || '/data';
+const UPLOAD_TEMP_DIR = path.join(DATA_DIR, 'tmp-uploads');
+
+if (!fs.existsSync(UPLOAD_TEMP_DIR)) {
+  fs.mkdirSync(UPLOAD_TEMP_DIR, { recursive: true });
+}
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  dest: UPLOAD_TEMP_DIR,
   limits: { fileSize: MAX_FILE_SIZE }
 });
 
@@ -135,6 +142,8 @@ router.get('/:bucket/metadata', async (req: Request, res: Response) => {
 });
 
 router.post('/:bucket/upload', upload.array('files'), async (req: Request, res: Response) => {
+  const files = (req.files as Express.Multer.File[]) || [];
+
   try {
     const { bucket } = req.params;
     if (!isValidBucketName(bucket)) {
@@ -142,7 +151,6 @@ router.post('/:bucket/upload', upload.array('files'), async (req: Request, res: 
     }
 
     const prefix = (req.body.prefix as string) || '';
-    const files = req.files as Express.Multer.File[];
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'No files provided' });
@@ -170,7 +178,8 @@ router.post('/:bucket/upload', upload.array('files'), async (req: Request, res: 
         continue; // Skip invalid keys
       }
 
-      await s3.uploadObject(bucket, key, file.buffer, file.mimetype);
+      const fileStream = fs.createReadStream(file.path);
+      await s3.uploadObjectStream(bucket, key, fileStream, file.mimetype, file.size);
       results.push({ key, size: file.size });
     }
 
@@ -179,6 +188,12 @@ router.post('/:bucket/upload', upload.array('files'), async (req: Request, res: 
     console.error('Error uploading files:', error);
     const { message, s3Code, status } = getS3ErrorDetails(error);
     res.status(status).json({ error: message, s3Code });
+  } finally {
+    await Promise.allSettled(
+      files
+        .filter(file => file.path)
+        .map(file => fs.promises.unlink(file.path))
+    );
   }
 });
 
