@@ -232,6 +232,10 @@ router.put('/:bucket/rename', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid keys' });
     }
 
+    if (oldKey === newKey) {
+      return res.json({ success: true, message: 'No change needed' });
+    }
+
     await s3.renameObject(bucket, oldKey, newKey);
     res.json({ success: true, message: 'Renamed successfully' });
   } catch (error: any) {
