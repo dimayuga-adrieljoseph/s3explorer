@@ -29,3 +29,6 @@ export interface CommandAction {
   icon: React.ComponentType<{ className?: string }>;
   onSelect: () => void;
 }
+
+export type SortField = 'name' | 'size' | 'lastModified';
+export type SortDirection = 'asc' | 'desc';

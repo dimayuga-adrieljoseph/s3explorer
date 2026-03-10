@@ -1,7 +1,7 @@
-import { useRef, useCallback, memo } from 'react';
+import { useRef, useCallback, useEffect, memo } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { Download, MoreHorizontal, Check } from 'lucide-react';
-import type { S3Object } from '../types';
+import { Download, MoreHorizontal, Check, ChevronUp, ChevronDown } from 'lucide-react';
+import type { S3Object, SortField, SortDirection } from '../types';
 import { formatBytes, formatDate } from '../utils/formatters';
 import { getFileName, getFileIcon } from '../utils/fileUtils';
 import { PAGINATION } from '../constants';
@@ -15,6 +15,10 @@ interface FileTableProps {
     onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
     onSelect: (key: string, selected: boolean) => void;
     onSelectAll: (selected: boolean) => void;
+    onSelectRange: (keys: string[]) => void;
+    sortField: SortField;
+    sortDirection: SortDirection;
+    onSort: (field: SortField) => void;
     hasMore?: boolean;
     loadingMore?: boolean;
     onLoadMore?: () => void;
@@ -29,7 +33,7 @@ interface RowProps {
         onNavigate: (obj: S3Object) => void;
         onDownload: (obj: S3Object) => void;
         onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
-        onSelect: (key: string, selected: boolean) => void;
+        onItemSelect: (index: number, key: string, isCurrentlySelected: boolean) => void;
     };
 }
 
@@ -51,9 +55,38 @@ function SelectCheckbox({ checked, onChange, ariaLabel }: { checked: boolean; on
     );
 }
 
+// Sort indicator arrow
+function SortIndicator({ direction }: { direction: SortDirection }) {
+    return direction === 'asc'
+        ? <ChevronUp className="w-3 h-3 text-accent-purple" />
+        : <ChevronDown className="w-3 h-3 text-accent-purple" />;
+}
+
+// Clickable sortable column header
+function SortButton({ field, label, sortField, sortDirection, onSort, className }: {
+    field: SortField;
+    label: string;
+    sortField: SortField;
+    sortDirection: SortDirection;
+    onSort: (field: SortField) => void;
+    className?: string;
+}) {
+    const isActive = sortField === field;
+    return (
+        <button
+            onClick={() => onSort(field)}
+            className={`flex items-center gap-0.5 cursor-pointer hover:text-foreground transition-colors select-none ${isActive ? 'text-foreground' : ''} ${className || ''}`}
+            aria-label={`Sort by ${label} ${isActive ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
+        >
+            {label}
+            {isActive && <SortIndicator direction={sortDirection} />}
+        </button>
+    );
+}
+
 // Memoized row component for virtual scrolling
 const FileRow = memo(({ index, style, data }: RowProps) => {
-    const { objects, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect } = data;
+    const { objects, selectedKeys, onNavigate, onDownload, onContextMenu, onItemSelect } = data;
     const obj = objects[index];
     const fileName = getFileName(obj.key);
     const isSelected = selectedKeys.has(obj.key);
@@ -74,7 +107,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
             <div className="w-10 flex items-center justify-center pl-2">
                 <SelectCheckbox
                     checked={isSelected}
-                    onChange={() => onSelect(obj.key, !isSelected)}
+                    onChange={() => onItemSelect(index, obj.key, isSelected)}
                     ariaLabel={`Select ${fileName}`}
                 />
             </div>
@@ -132,12 +165,12 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
 FileRow.displayName = 'FileRow';
 
 // Standard table row for non-virtualized rendering
-function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isSelected, index, skipAnimations }: {
+function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect, isSelected, index, skipAnimations }: {
     obj: S3Object;
     onNavigate: (obj: S3Object) => void;
     onDownload: (obj: S3Object) => void;
     onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
-    onSelect: (key: string, selected: boolean) => void;
+    onItemSelect: (index: number, key: string, isCurrentlySelected: boolean) => void;
     isSelected: boolean;
     index: number;
     skipAnimations: boolean;
@@ -160,7 +193,7 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isS
                 <div className="flex items-center justify-center">
                     <SelectCheckbox
                         checked={isSelected}
-                        onChange={() => onSelect(obj.key, !isSelected)}
+                        onChange={() => onItemSelect(index, obj.key, isSelected)}
                         ariaLabel={`Select ${fileName}`}
                     />
                 </div>
@@ -218,8 +251,43 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isS
     );
 }
 
-export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect, onSelectAll, hasMore, loadingMore, onLoadMore }: FileTableProps) {
+export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect, onSelectAll, onSelectRange, sortField, sortDirection, onSort, hasMore, loadingMore, onLoadMore }: FileTableProps) {
     const containerRef = useRef<HTMLDivElement>(null);
+    const lastClickedIndexRef = useRef<number>(-1);
+    const shiftKeyRef = useRef(false);
+
+    // Track shift key state for range selection
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Shift') shiftKeyRef.current = true; };
+        const handleKeyUp = (e: KeyboardEvent) => { if (e.key === 'Shift') shiftKeyRef.current = false; };
+        const handleBlur = () => { shiftKeyRef.current = false; };
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('blur', handleBlur);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('blur', handleBlur);
+        };
+    }, []);
+
+    // Reset shift anchor when objects list changes
+    useEffect(() => {
+        lastClickedIndexRef.current = -1;
+    }, [objects]);
+
+    // Handle item selection with shift+click range support
+    const handleItemSelect = useCallback((index: number, key: string, isCurrentlySelected: boolean) => {
+        if (shiftKeyRef.current && lastClickedIndexRef.current >= 0 && lastClickedIndexRef.current !== index) {
+            const start = Math.min(lastClickedIndexRef.current, index);
+            const end = Math.max(lastClickedIndexRef.current, index);
+            const keysInRange = objects.slice(start, end + 1).map(obj => obj.key);
+            onSelectRange(keysInRange);
+        } else {
+            onSelect(key, !isCurrentlySelected);
+        }
+        lastClickedIndexRef.current = index;
+    }, [objects, onSelect, onSelectRange]);
 
     // Use virtualization for large lists
     const useVirtualization = objects.length > PAGINATION.VIRTUAL_SCROLL_THRESHOLD;
@@ -229,10 +297,12 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
         if (containerRef.current) {
             return containerRef.current.clientHeight;
         }
-        return 400; // Default height
+        return 400;
     }, []);
 
     const allSelected = objects.length > 0 && objects.every(obj => selectedKeys.has(obj.key));
+
+    const sortProps = { sortField, sortDirection, onSort };
 
     if (loading && objects.length === 0) {
         return (
@@ -254,11 +324,11 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
         );
     }
 
-    // Use virtual scrolling for large lists
+    // Virtual scrolling for large lists
     if (useVirtualization) {
         return (
             <div ref={containerRef} className="h-full flex flex-col">
-                {/* Header */}
+                {/* Header with sortable columns */}
                 <div className="flex items-center border-b border-border bg-background-secondary/50 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     <div className="w-10 flex items-center justify-center pl-2">
                         <SelectCheckbox
@@ -267,9 +337,15 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                             ariaLabel={allSelected ? 'Deselect all' : 'Select all'}
                         />
                     </div>
-                    <div className="flex-1 px-2 sm:px-3 py-2">Name</div>
-                    <div className="w-[72px] hidden sm:block text-center px-2 py-2">Size</div>
-                    <div className="w-[88px] hidden md:block text-center px-2 py-2">Modified</div>
+                    <div className="flex-1 px-2 sm:px-3 py-2">
+                        <SortButton field="name" label="Name" {...sortProps} />
+                    </div>
+                    <div className="w-[72px] hidden sm:flex justify-center px-2 py-2">
+                        <SortButton field="size" label="Size" {...sortProps} />
+                    </div>
+                    <div className="w-[88px] hidden md:flex justify-center px-2 py-2">
+                        <SortButton field="lastModified" label="Modified" {...sortProps} />
+                    </div>
                     <div className="w-[52px] sm:w-[64px] py-2"><span className="sr-only">Actions</span></div>
                 </div>
 
@@ -281,7 +357,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                         itemSize={PAGINATION.ROW_HEIGHT}
                         width="100%"
                         overscanCount={PAGINATION.OVERSCAN_COUNT}
-                        itemData={{ objects, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect }}
+                        itemData={{ objects, selectedKeys, onNavigate, onDownload, onContextMenu, onItemSelect: handleItemSelect }}
                         onItemsRendered={({ visibleStopIndex }) => {
                             if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= objects.length - 20) {
                                 onLoadMore();
@@ -321,9 +397,15 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                                 />
                             </div>
                         </th>
-                        <th scope="col">Name</th>
-                        <th scope="col" className="w-[72px] hidden sm:table-cell !text-center !px-2">Size</th>
-                        <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">Modified</th>
+                        <th scope="col">
+                            <SortButton field="name" label="Name" {...sortProps} />
+                        </th>
+                        <th scope="col" className="w-[72px] hidden sm:table-cell !text-center !px-2">
+                            <SortButton field="size" label="Size" {...sortProps} className="justify-center w-full" />
+                        </th>
+                        <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">
+                            <SortButton field="lastModified" label="Modified" {...sortProps} className="justify-center w-full" />
+                        </th>
                         <th scope="col" className="w-[52px] sm:w-[64px]"><span className="sr-only">Actions</span></th>
                     </tr>
                 </thead>
@@ -335,7 +417,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                             onNavigate={onNavigate}
                             onDownload={onDownload}
                             onContextMenu={onContextMenu}
-                            onSelect={onSelect}
+                            onItemSelect={handleItemSelect}
                             isSelected={selectedKeys.has(obj.key)}
                             index={i}
                             skipAnimations={skipAnimations}

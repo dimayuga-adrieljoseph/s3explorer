@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Folder, Database, Download, Edit3, Trash2 } from 'lucide-react';
+import { Folder, Database, Download, Edit3, Trash2, Copy, Eye, Search, X } from 'lucide-react';
 import * as api from './api';
-import type { Bucket, S3Object, ToastState, ContextMenuState } from './types';
-import { getFileName } from './utils/fileUtils';
+import type { Bucket, S3Object, ToastState, ContextMenuState, SortField, SortDirection } from './types';
+import { getFileName, isPreviewable } from './utils/fileUtils';
 import { resolveUploadConflicts, generateUniqueName, hasNameConflict } from './utils/uniqueName';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { Sidebar } from './components/Sidebar';
@@ -26,6 +26,8 @@ const LoginPage = lazy(() => import('./components/LoginPage').then(m => ({ defau
 const SetupPage = lazy(() => import('./components/SetupPage').then(m => ({ default: m.SetupPage })));
 const ConnectionManager = lazy(() => import('./components/ConnectionManager').then(m => ({ default: m.ConnectionManager })));
 const WelcomeMessage = lazy(() => import('./components/WelcomeMessage').then(m => ({ default: m.WelcomeMessage })));
+const FilePreviewModal = lazy(() => import('./components/FilePreviewModal').then(m => ({ default: m.FilePreviewModal })));
+const CopyModal = lazy(() => import('./components/CopyModal').then(m => ({ default: m.CopyModal })));
 import { BatchActionsBar } from './components/BatchActionsBar';
 import type { Connection } from './api';
 
@@ -76,6 +78,19 @@ export default function App() {
 
   // Selection state for batch operations
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  // Sort state
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // File search/filter
+  const [fileSearchQuery, setFileSearchQuery] = useState('');
+
+  // Preview state
+  const [previewObject, setPreviewObject] = useState<S3Object | null>(null);
+
+  // Copy state
+  const [copySource, setCopySource] = useState<S3Object | null>(null);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.THEME);
@@ -430,19 +445,39 @@ export default function App() {
 
   const handleSelectAll = useCallback((selected: boolean) => {
     if (selected) {
-      setSelectedKeys(new Set(objects.map(obj => obj.key)));
+      setSelectedKeys(new Set(displayObjectsRef.current.map(obj => obj.key)));
     } else {
       setSelectedKeys(new Set());
     }
-  }, [objects]);
+  }, []);
+
+  // Range selection for shift+click
+  const handleSelectRange = useCallback((keys: string[]) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev);
+      keys.forEach(key => next.add(key));
+      return next;
+    });
+  }, []);
+
+  // Sort handler
+  const handleSort = useCallback((field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  }, [sortField]);
 
   const clearSelection = useCallback(() => {
     setSelectedKeys(new Set());
   }, []);
 
-  // Clear selection when path or bucket changes
+  // Clear selection and file search when path or bucket changes
   useEffect(() => {
     clearSelection();
+    setFileSearchQuery('');
   }, [selectedBucket, currentPath, clearSelection]);
 
   // Batch delete handler
@@ -476,6 +511,24 @@ export default function App() {
   };
 
 
+
+  // Copy file handler
+  const handleCopyObject = async (destBucket: string, destKey: string) => {
+    if (!copySource || !selectedBucket) return;
+    const source = copySource;
+    setCopySource(null);
+
+    try {
+      await api.copyObject(selectedBucket, source.key, destBucket, destKey);
+      showToastMsg('File copied');
+      // Refresh if copying within current bucket
+      if (destBucket === selectedBucket) {
+        loadObjects();
+      }
+    } catch (err: any) {
+      showToastMsg(err.message || 'Copy failed', 'error');
+    }
+  };
 
   const handleCreateFolder = async () => {
     if (!newName.trim() || !selectedBucket) return;
@@ -616,6 +669,44 @@ export default function App() {
 
   const breadcrumbs = useMemo(() => currentPath.split('/').filter(Boolean), [currentPath]);
 
+  // Filtered and sorted objects for display
+  const displayObjects = useMemo(() => {
+    let filtered = objects;
+
+    if (fileSearchQuery.trim()) {
+      const query = fileSearchQuery.toLowerCase();
+      filtered = filtered.filter(obj =>
+        getFileName(obj.key).toLowerCase().includes(query)
+      );
+    }
+
+    return [...filtered].sort((a, b) => {
+      // Folders always first
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+
+      const multiplier = sortDirection === 'asc' ? 1 : -1;
+
+      switch (sortField) {
+        case 'name':
+          return multiplier * getFileName(a.key).localeCompare(getFileName(b.key));
+        case 'size':
+          return multiplier * (a.size - b.size);
+        case 'lastModified': {
+          const aDate = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+          const bDate = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+          return multiplier * (aDate - bDate);
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [objects, fileSearchQuery, sortField, sortDirection]);
+
+  // Ref to always have current displayObjects in callbacks
+  const displayObjectsRef = useRef(displayObjects);
+  displayObjectsRef.current = displayObjects;
+
   // Loading state - use same background as app to prevent white flash
   if (checkingAuth) {
     return (
@@ -694,6 +785,37 @@ export default function App() {
         <UploadProgress uploading={uploading} progress={uploadProgress} />
         <DropOverlay isDragActive={isDragActive} />
 
+        {/* File filter bar */}
+        {selectedBucket && activeConnection && (objects.length > 0 || fileSearchQuery) && (
+          <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 border-b border-border bg-background-secondary/30 flex-shrink-0">
+            <Search className="w-3.5 h-3.5 text-foreground-muted flex-shrink-0" aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="Filter files..."
+              value={fileSearchQuery}
+              onChange={e => setFileSearchQuery(e.target.value)}
+              className="bg-transparent text-sm outline-none flex-1 text-foreground placeholder:text-foreground-muted min-w-0"
+              aria-label="Filter files by name"
+              autoComplete="off"
+              spellCheck="false"
+            />
+            {fileSearchQuery && (
+              <>
+                <span className="text-xs text-foreground-muted flex-shrink-0">
+                  {displayObjects.length} result{displayObjects.length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  onClick={() => setFileSearchQuery('')}
+                  className="btn btn-ghost btn-icon w-6 h-6 flex-shrink-0"
+                  aria-label="Clear filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto">
           {!activeConnection ? (
             <EmptyState
@@ -711,11 +833,15 @@ export default function App() {
             />
           ) : !selectedBucket ? (
             <EmptyState icon={Database} title="No bucket selected" description="Select a bucket from the sidebar" />
-          ) : objects.length === 0 && !loading ? (
-            <EmptyState icon={Folder} title="Empty folder" description="Drop files here to upload" />
+          ) : displayObjects.length === 0 && !loading ? (
+            fileSearchQuery ? (
+              <EmptyState icon={Search} title="No matches" description={`No files match "${fileSearchQuery}"`} />
+            ) : (
+              <EmptyState icon={Folder} title="Empty folder" description="Drop files here to upload" />
+            )
           ) : (
             <FileTable
-              objects={objects}
+              objects={displayObjects}
               loading={loading}
               selectedKeys={selectedKeys}
               onNavigate={handleNavigate}
@@ -723,6 +849,10 @@ export default function App() {
               onContextMenu={handleContextMenu}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}
+              onSelectRange={handleSelectRange}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
@@ -745,12 +875,25 @@ export default function App() {
 
       {contextMenu && (
         <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}>
-
+          {!contextMenu.object.isFolder && isPreviewable(contextMenu.object.key) && (
+            <ContextMenuItem
+              icon={Eye}
+              label="Preview"
+              onClick={() => { setPreviewObject(contextMenu.object); setContextMenu(null); }}
+            />
+          )}
           {!contextMenu.object.isFolder && (
             <ContextMenuItem
               icon={Download}
               label="Download"
               onClick={() => { handleDownload(contextMenu.object); setContextMenu(null); }}
+            />
+          )}
+          {!contextMenu.object.isFolder && (
+            <ContextMenuItem
+              icon={Copy}
+              label="Copy to..."
+              onClick={() => { setCopySource(contextMenu.object); setContextMenu(null); }}
             />
           )}
           <ContextMenuItem
@@ -824,6 +967,23 @@ export default function App() {
           onUpload={() => fileInputRef.current?.click()}
           onOpenConnections={() => setShowConnectionManager(true)}
           onNewBucket={() => { setNewName(''); setShowNewBucket(true); }}
+        />
+
+        <FilePreviewModal
+          object={previewObject}
+          bucket={selectedBucket || ''}
+          onClose={() => setPreviewObject(null)}
+          onDownload={handleDownload}
+        />
+
+        <CopyModal
+          isOpen={!!copySource}
+          sourceObject={copySource}
+          sourceBucket={selectedBucket || ''}
+          buckets={buckets}
+          currentPath={currentPath}
+          onClose={() => setCopySource(null)}
+          onCopy={handleCopyObject}
         />
       </Suspense>
 

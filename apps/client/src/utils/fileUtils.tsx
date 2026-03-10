@@ -45,3 +45,29 @@ export function getFileIcon(key: string, isFolder: boolean) {
 
     return <File className="w-5 h-5" />;
 }
+
+// Preview support
+export type PreviewType = 'image' | 'video' | 'audio' | 'text' | 'pdf' | null;
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'bmp'];
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm'];
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'aac'];
+const TEXT_EXTENSIONS = [
+    'txt', 'md', 'json', 'yaml', 'yml', 'xml', 'csv', 'log', 'env', 'ini', 'cfg', 'conf',
+    'js', 'ts', 'jsx', 'tsx', 'py', 'go', 'rs', 'java', 'css', 'html', 'sql', 'sh', 'bash',
+    'rb', 'php', 'c', 'cpp', 'h', 'hpp', 'toml', 'lock',
+];
+
+export function getPreviewType(key: string): PreviewType {
+    const ext = key.split('.').pop()?.toLowerCase() || '';
+    if (IMAGE_EXTENSIONS.includes(ext)) return 'image';
+    if (VIDEO_EXTENSIONS.includes(ext)) return 'video';
+    if (AUDIO_EXTENSIONS.includes(ext)) return 'audio';
+    if (TEXT_EXTENSIONS.includes(ext)) return 'text';
+    if (ext === 'pdf') return 'pdf';
+    return null;
+}
+
+export function isPreviewable(key: string): boolean {
+    return getPreviewType(key) !== null;
+}

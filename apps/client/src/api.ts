@@ -88,8 +88,10 @@ async function fetchWithTimeout(
     return response;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      // Check if it was our timeout or a manual cancel
-      const wasCancelled = requestKey && !activeRequests.has(requestKey);
+      // Check if it was a manual cancel (our controller was replaced by a newer one)
+      // or if we were removed entirely — either way, we were cancelled, not timed out
+      const currentController = requestKey ? activeRequests.get(requestKey) : undefined;
+      const wasCancelled = requestKey && currentController !== controller;
       if (wasCancelled) {
         throw new ApiError('Request cancelled', 0, 'CANCELLED');
       }
@@ -98,7 +100,8 @@ async function fetchWithTimeout(
     throw new ApiError('Network error - check your connection', 0, 'NETWORK_ERROR');
   } finally {
     clearTimeout(timeoutId);
-    if (requestKey) {
+    // Only clean up if we're still the active request (not replaced by a newer one)
+    if (requestKey && activeRequests.get(requestKey) === controller) {
       activeRequests.delete(requestKey);
     }
   }
@@ -295,6 +298,11 @@ export async function getDownloadUrl(bucket: string, key: string): Promise<strin
   const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}/download?${params}`);
   const data = await handleResponse<{ url: string }>(res);
   return data.url;
+}
+
+export function getProxyUrl(bucket: string, key: string): string {
+  const params = new URLSearchParams({ key });
+  return `${API_BASE}/objects/${encodeURIComponent(bucket)}/proxy?${params}`;
 }
 
 export async function uploadFiles(
