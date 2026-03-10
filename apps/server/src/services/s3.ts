@@ -401,15 +401,33 @@ export async function renameObject(
     });
 
     // Phase 2: Batch delete originals using DeleteObjectsCommand (chunks of 1000)
-    for (const keyBatch of chunk(keys, 1000)) {
-      const deleteCommand = new DeleteObjectsCommand({
-        Bucket: bucket,
-        Delete: {
-          Objects: keyBatch.map(Key => ({ Key })),
-          Quiet: true,
-        },
-      });
-      await client.send(deleteCommand);
+    // If delete fails, rollback by removing the copies to avoid duplication
+    try {
+      for (const keyBatch of chunk(keys, 1000)) {
+        const deleteCommand = new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: {
+            Objects: keyBatch.map(Key => ({ Key })),
+            Quiet: true,
+          },
+        });
+        await client.send(deleteCommand);
+      }
+    } catch (deleteError) {
+      console.error('Rename Phase 2 (delete originals) failed, rolling back copies:', deleteError);
+      // Rollback: delete the copies we made in Phase 1
+      const newKeys = keyMappings.map(m => m.newKey);
+      try {
+        for (const keyBatch of chunk(newKeys, 1000)) {
+          await client.send(new DeleteObjectsCommand({
+            Bucket: bucket,
+            Delete: { Objects: keyBatch.map(Key => ({ Key })), Quiet: true },
+          }));
+        }
+      } catch (rollbackError) {
+        console.error('Rename rollback also failed:', rollbackError);
+      }
+      throw deleteError;
     }
   } else {
     const copyCommand = new CopyObjectCommand({

@@ -70,11 +70,29 @@ export function Sidebar({
     );
 
     // Memoize callback to prevent unnecessary re-renders
-    const handleCopyBucketName = useCallback((e: React.MouseEvent, bucketName: string) => {
+    const handleCopyBucketName = useCallback(async (e: React.MouseEvent, bucketName: string) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(bucketName);
-        setCopiedBucket(bucketName);
-        setTimeout(() => setCopiedBucket(null), 2000);
+        try {
+            await navigator.clipboard.writeText(bucketName);
+            setCopiedBucket(bucketName);
+            setTimeout(() => setCopiedBucket(null), 2000);
+        } catch {
+            // Fallback for non-HTTPS or denied permission
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = bucketName;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                setCopiedBucket(bucketName);
+                setTimeout(() => setCopiedBucket(null), 2000);
+            } catch {
+                // Silently fail if even fallback doesn't work
+            }
+        }
     }, []);
 
     return (

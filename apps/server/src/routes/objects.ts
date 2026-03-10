@@ -20,9 +20,10 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_SIZE }
 });
 
-// Sanitize filename - prevent path traversal
+// Sanitize filename - prevent path traversal, preserve unicode
 function sanitizeFilename(filename: string): string {
-  return path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
+  // Strip path components, then only remove truly dangerous characters
+  return path.basename(filename).replace(/[<>:"|?*\x00-\x1f]/g, '_');
 }
 
 // Validate bucket name
@@ -33,7 +34,7 @@ function isValidBucketName(name: string): boolean {
 
 // Validate object key
 function isValidObjectKey(key: string): boolean {
-  return key.length > 0 && key.length <= 1024 && !key.includes('../');
+  return key.length > 0 && Buffer.byteLength(key, 'utf8') <= 1024 && !key.includes('../');
 }
 
 // Helper to extract S3 error details
@@ -52,7 +53,11 @@ router.get('/:bucket', async (req: Request, res: Response) => {
     }
 
     const prefix = (req.query.prefix as string) || '';
-    const maxKeys = req.query.maxKeys ? parseInt(req.query.maxKeys as string, 10) : undefined;
+    if (prefix && prefix.includes('../')) {
+      return res.status(400).json({ error: 'Invalid prefix' });
+    }
+    const parsedMaxKeys = req.query.maxKeys ? parseInt(req.query.maxKeys as string, 10) : undefined;
+    const maxKeys = parsedMaxKeys && !isNaN(parsedMaxKeys) ? Math.min(Math.max(parsedMaxKeys, 1), 1000) : undefined;
     const continuationToken = req.query.continuationToken ? (req.query.continuationToken as string) : undefined;
     const { objects, prefixes, nextContinuationToken, isTruncated } = await s3.listObjects(bucket, prefix, '/', maxKeys, continuationToken);
     res.json({ objects, prefixes, bucket, prefix, nextContinuationToken, isTruncated });
@@ -111,8 +116,20 @@ router.get('/:bucket/proxy', async (req: Request, res: Response) => {
     }
 
     const stream = await s3.getObjectStream(bucket, key);
-    // @ts-ignore - AWS SDK stream types are compatible with express response
-    stream.pipe(res);
+    if (!stream) {
+      return res.status(404).json({ error: 'Object not found' });
+    }
+    // Handle stream errors during transfer
+    const nodeStream = stream as import('stream').Readable;
+    nodeStream.on('error', (err: Error) => {
+      console.error('Stream error during proxy:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Download interrupted' });
+      } else {
+        res.end();
+      }
+    });
+    nodeStream.pipe(res);
   } catch (error: any) {
     console.error('Error proxying object:', error);
     const { message, s3Code, status } = getS3ErrorDetails(error);

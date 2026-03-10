@@ -289,7 +289,7 @@ export default function App() {
   }, [selectedBucket, currentPath]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!selectedBucket || acceptedFiles.length === 0) return;
+    if (!selectedBucket || acceptedFiles.length === 0 || uploading) return;
 
     // Check network status before upload
     if (!networkStatus.isOnline || !networkStatus.isBackendReachable) {
@@ -341,7 +341,7 @@ export default function App() {
           : 'Upload failed';
       showToastMsg(errorMsg, 'error');
     }
-  }, [selectedBucket, currentPath, loadObjects, objects, networkStatus.isOnline, networkStatus.isBackendReachable]);
+  }, [selectedBucket, currentPath, loadObjects, objects, networkStatus.isOnline, networkStatus.isBackendReachable, uploading]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, noClick: true });
 
@@ -828,6 +828,7 @@ export default function App() {
       </Suspense>
 
       <input
+        key={uploadProgress}
         ref={fileInputRef}
         type="file"
         multiple
@@ -835,7 +836,6 @@ export default function App() {
         onChange={(e) => {
           if (e.target.files) {
             onDrop(Array.from(e.target.files));
-            e.target.value = '';
           }
         }}
       />

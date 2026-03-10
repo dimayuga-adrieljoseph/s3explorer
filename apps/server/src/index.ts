@@ -40,7 +40,7 @@ app.use(helmet({
 app.set('trust proxy', 1);
 
 // Body parsing
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Global error logging for debugging
 app.use((req, res, next) => {

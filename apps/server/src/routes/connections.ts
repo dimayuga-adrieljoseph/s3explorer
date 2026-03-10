@@ -53,8 +53,8 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const { name, endpoint, accessKey, secretKey, region, forcePathStyle } = req.body;
 
-    if (!name || !endpoint || !accessKey || !secretKey) {
-      res.status(400).json({ error: 'name, endpoint, accessKey, secretKey required' });
+    if (!name?.trim() || !endpoint?.trim() || !accessKey?.trim() || !secretKey?.trim()) {
+      res.status(400).json({ error: 'name, endpoint, accessKey, secretKey required and cannot be empty' });
       return;
     }
 
@@ -72,10 +72,13 @@ router.post('/', async (req: Request, res: Response) => {
       forcePathStyle: forcePathStyle ?? true,
     };
 
+    let testPassed = false;
+    let testError: string | undefined;
     try {
       await listBuckets(config);
+      testPassed = true;
     } catch (testErr: any) {
-      // Connection test failed but we still save - user may fix credentials later
+      testError = testErr.message || 'Connection test failed';
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`Connection test failed for '${name}':`, testErr.message);
       }
@@ -94,7 +97,7 @@ router.post('/', async (req: Request, res: Response) => {
       forcePathStyle ? 1 : 0
     );
 
-    res.json({ success: true, id: result.lastInsertRowid });
+    res.json({ success: true, id: result.lastInsertRowid, testPassed, testError });
   } catch (err: any) {
     if (err.message?.includes('UNIQUE constraint')) {
       res.status(400).json({ error: 'Connection name already exists' });
@@ -130,10 +133,13 @@ router.put('/:id', async (req: Request, res: Response) => {
       forcePathStyle: forcePathStyle ?? !!existing.force_path_style,
     };
 
+    let testPassed = false;
+    let testError: string | undefined;
     try {
       await listBuckets(config);
+      testPassed = true;
     } catch (testErr: any) {
-      // Connection test failed but we still update - user may fix credentials later
+      testError = testErr.message || 'Connection test failed';
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`Connection test failed for '${name || existing.name}':`, testErr.message);
       }
@@ -153,7 +159,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       id
     );
 
-    res.json({ success: true });
+    res.json({ success: true, testPassed, testError });
   } catch (err: any) {
     if (err.message?.includes('UNIQUE constraint')) {
       res.status(400).json({ error: 'Connection name already exists' });
@@ -175,8 +181,13 @@ router.delete('/:id', (req: Request, res: Response) => {
       return;
     }
 
+    // If deleting the active connection, clear active state first
+    if (existing.is_active) {
+      connections.clearActive();
+    }
+
     connections.delete(id);
-    res.json({ success: true });
+    res.json({ success: true, wasActive: !!existing.is_active });
   } catch (err: any) {
     console.error('Error deleting connection:', err);
     res.status(500).json({ error: 'Failed to delete connection' });
