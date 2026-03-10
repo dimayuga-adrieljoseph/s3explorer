@@ -38,6 +38,7 @@ export const PAGINATION = {
   VIRTUAL_SCROLL_THRESHOLD: 100, // Use virtual scroll when items exceed this
   ROW_HEIGHT: 44,           // Height of each row in virtual scroll (px)
   OVERSCAN_COUNT: 5,        // Extra rows to render above/below viewport
+  LOAD_MORE_THRESHOLD: 20,  // Start loading more when within this many items of the end
 } as const;
 
 // Storage Keys

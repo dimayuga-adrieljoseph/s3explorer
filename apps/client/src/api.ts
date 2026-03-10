@@ -5,6 +5,17 @@ const API_BASE = '/api';
 
 export type { Bucket, S3Object };
 
+// Request cancellation
+const activeRequests = new Map<string, AbortController>();
+
+export function cancelRequest(key: string) {
+  const existing = activeRequests.get(key);
+  if (existing) {
+    existing.abort();
+    activeRequests.delete(key);
+  }
+}
+
 // S3 Error code to user-friendly message mapping
 const S3_ERROR_MESSAGES: Record<string, string> = {
   'NoSuchBucket': 'Bucket does not exist',
@@ -51,12 +62,22 @@ export class ApiError extends Error {
 // Wrapper for fetch with timeout and better error handling
 async function fetchWithTimeout(
   url: string,
-  options: RequestInit & { timeout?: number } = {}
+  options: RequestInit & { timeout?: number; requestKey?: string } = {}
 ): Promise<Response> {
-  const { timeout = API_TIMEOUTS.DEFAULT, ...fetchOptions } = options;
+  const { timeout = API_TIMEOUTS.DEFAULT, requestKey, ...fetchOptions } = options;
+
+  // Cancel any existing request with the same key
+  if (requestKey) {
+    cancelRequest(requestKey);
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  // Track the request by key
+  if (requestKey) {
+    activeRequests.set(requestKey, controller);
+  }
 
   try {
     const response = await fetch(url, {
@@ -67,11 +88,19 @@ async function fetchWithTimeout(
     return response;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      // Check if it was our timeout or a manual cancel
+      const wasCancelled = requestKey && !activeRequests.has(requestKey);
+      if (wasCancelled) {
+        throw new ApiError('Request cancelled', 0, 'CANCELLED');
+      }
       throw new ApiError('Request timed out', 408, 'TIMEOUT');
     }
     throw new ApiError('Network error - check your connection', 0, 'NETWORK_ERROR');
   } finally {
     clearTimeout(timeoutId);
+    if (requestKey) {
+      activeRequests.delete(requestKey);
+    }
   }
 }
 
@@ -241,11 +270,24 @@ export async function deleteBucket(name: string): Promise<void> {
 }
 
 // Object API
-export async function listObjects(bucket: string, prefix: string = ''): Promise<S3Object[]> {
+export async function listObjects(
+  bucket: string,
+  prefix: string = '',
+  maxKeys?: number,
+  continuationToken?: string
+): Promise<{ objects: S3Object[]; nextContinuationToken?: string; isTruncated: boolean }> {
   const params = new URLSearchParams({ prefix });
-  const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}?${params}`);
-  const data = await handleResponse<{ objects: S3Object[] }>(res);
-  return data.objects;
+  if (maxKeys !== undefined) {
+    params.set('maxKeys', String(maxKeys));
+  }
+  if (continuationToken) {
+    params.set('continuationToken', continuationToken);
+  }
+  const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}?${params}`, {
+    requestKey: 'listObjects',
+  });
+  const data = await handleResponse<{ objects: S3Object[]; nextContinuationToken?: string; isTruncated: boolean }>(res);
+  return { objects: data.objects, nextContinuationToken: data.nextContinuationToken, isTruncated: data.isTruncated };
 }
 
 export async function getDownloadUrl(bucket: string, key: string): Promise<string> {
@@ -259,7 +301,8 @@ export async function uploadFiles(
   bucket: string,
   prefix: string,
   files: File[],
-  renamedNames?: Map<File, string>
+  renamedNames?: Map<File, string>,
+  onProgress?: (percent: number) => void
 ): Promise<void> {
   const formData = new FormData();
   formData.append('prefix', prefix);
@@ -276,12 +319,48 @@ export async function uploadFiles(
     files.forEach(file => formData.append('files', file));
   }
 
-  const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}/upload`, {
-    method: 'POST',
-    body: formData,
-    timeout: API_TIMEOUTS.UPLOAD,
+  const url = `${API_BASE}/objects/${encodeURIComponent(bucket)}/upload`;
+
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.withCredentials = true;
+    xhr.timeout = API_TIMEOUTS.UPLOAD;
+
+    xhr.upload.onprogress = (event) => {
+      if (onProgress && event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          const s3Code = data.s3Code || data.code || data.Code;
+          const message = data.error || data.message || data.Message || 'Upload failed';
+          const error = new ApiError(message, xhr.status, undefined, s3Code);
+          error.message = error.getUserMessage();
+          reject(error);
+        } catch {
+          reject(new ApiError('Upload failed', xhr.status, 'UPLOAD_ERROR'));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new ApiError('Network error - check your connection', 0, 'NETWORK_ERROR'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new ApiError('Request timed out', 408, 'TIMEOUT'));
+    };
+
+    xhr.send(formData);
   });
-  await handleResponse(res);
 }
 
 export async function createFolder(bucket: string, path: string): Promise<void> {

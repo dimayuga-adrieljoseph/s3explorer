@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Folder, Database, Download, Edit3, Trash2 } from 'lucide-react';
 import * as api from './api';
@@ -16,16 +16,16 @@ import { UploadProgress } from './components/UploadProgress';
 import { DropOverlay } from './components/DropOverlay';
 import { ErrorBanner } from './components/ErrorBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
-import { CreateBucketModal } from './components/modals/CreateBucketModal';
-import { CreateFolderModal } from './components/modals/CreateFolderModal';
-import { RenameModal } from './components/modals/RenameModal';
-import { DeleteModal } from './components/modals/DeleteModal';
-import { DeleteBucketModal } from './components/modals/DeleteBucketModal';
-import { CommandPalette } from './components/CommandPalette';
-import { LoginPage } from './components/LoginPage';
-import { SetupPage } from './components/SetupPage';
-import { ConnectionManager } from './components/ConnectionManager';
-import { WelcomeMessage } from './components/WelcomeMessage';
+const CreateBucketModal = lazy(() => import('./components/modals/CreateBucketModal').then(m => ({ default: m.CreateBucketModal })));
+const CreateFolderModal = lazy(() => import('./components/modals/CreateFolderModal').then(m => ({ default: m.CreateFolderModal })));
+const RenameModal = lazy(() => import('./components/modals/RenameModal').then(m => ({ default: m.RenameModal })));
+const DeleteModal = lazy(() => import('./components/modals/DeleteModal').then(m => ({ default: m.DeleteModal })));
+const DeleteBucketModal = lazy(() => import('./components/modals/DeleteBucketModal').then(m => ({ default: m.DeleteBucketModal })));
+const CommandPalette = lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const LoginPage = lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })));
+const SetupPage = lazy(() => import('./components/SetupPage').then(m => ({ default: m.SetupPage })));
+const ConnectionManager = lazy(() => import('./components/ConnectionManager').then(m => ({ default: m.ConnectionManager })));
+const WelcomeMessage = lazy(() => import('./components/WelcomeMessage').then(m => ({ default: m.WelcomeMessage })));
 import { BatchActionsBar } from './components/BatchActionsBar';
 import type { Connection } from './api';
 
@@ -58,6 +58,11 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Pagination state
+  const nextTokenRef = useRef<string | undefined>();
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Modal state
   const [showNewBucket, setShowNewBucket] = useState(false);
@@ -185,14 +190,36 @@ export default function App() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.listObjects(selectedBucket, currentPath);
-      setObjects(data);
+      nextTokenRef.current = undefined;
+      const result = await api.listObjects(selectedBucket, currentPath, 200);
+      setObjects(result.objects);
+      nextTokenRef.current = result.nextContinuationToken;
+      setHasMore(result.isTruncated);
     } catch (err: any) {
-      setError(err.message);
+      if (err.code !== 'CANCELLED') {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
   }, [selectedBucket, currentPath]);
+
+  const loadMore = useCallback(async () => {
+    if (!selectedBucket || !nextTokenRef.current || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const result = await api.listObjects(selectedBucket, currentPath, 200, nextTokenRef.current);
+      setObjects(prev => [...prev, ...result.objects]);
+      nextTokenRef.current = result.nextContinuationToken;
+      setHasMore(result.isTruncated);
+    } catch (err: any) {
+      if (err.code !== 'CANCELLED') {
+        setError(err.message);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [selectedBucket, currentPath, loadingMore]);
 
   useEffect(() => {
     if (selectedBucket && authenticated) loadObjects();
@@ -288,12 +315,9 @@ export default function App() {
       const renamedCount = Array.from(renamedFiles.entries())
         .filter(([file, newName]) => file.name !== newName).length;
 
-      // Simulate progress while uploading (real progress would need XHR)
-      const interval = setInterval(() => setUploadProgress(p => Math.min(p + 5, 85)), 200);
-
-      await api.uploadFiles(selectedBucket, currentPath, acceptedFiles, renamedFiles);
-
-      clearInterval(interval);
+      await api.uploadFiles(selectedBucket, currentPath, acceptedFiles, renamedFiles, (percent) => {
+        setUploadProgress(percent);
+      });
       setUploadProgress(100);
 
       setTimeout(() => {
@@ -497,42 +521,62 @@ export default function App() {
 
   const handleRename = async () => {
     if (!showRename || !newName.trim() || !selectedBucket) return;
-    try {
-      // Get existing names (excluding the item being renamed)
-      const existingNames = new Set(
-        objects
-          .filter(obj => obj.key !== showRename.key)
-          .map(obj => getFileName(obj.key))
-      );
 
-      // Generate unique name if there's a conflict
-      let finalName = newName.trim();
-      const originalName = finalName;
-      if (hasNameConflict(finalName, existingNames)) {
-        finalName = generateUniqueName(finalName, existingNames, showRename.isFolder);
-      }
+    // Get existing names (excluding the item being renamed)
+    const existingNames = new Set(
+      objects
+        .filter(obj => obj.key !== showRename.key)
+        .map(obj => getFileName(obj.key))
+    );
 
-      let newKey: string;
-      if (showRename.isFolder) {
-        const pathParts = showRename.key.split('/').filter(Boolean);
-        pathParts.pop();
-        const parentPath = pathParts.length > 0 ? pathParts.join('/') + '/' : '';
-        newKey = parentPath + finalName + '/';
-      } else {
-        const lastSlash = showRename.key.lastIndexOf('/');
-        const dirPath = lastSlash >= 0 ? showRename.key.substring(0, lastSlash + 1) : '';
-        newKey = dirPath + finalName;
-      }
-      await api.renameObject(selectedBucket, showRename.key, newKey);
+    // Generate unique name if there's a conflict
+    let finalName = newName.trim();
+    const originalName = finalName;
+    if (hasNameConflict(finalName, existingNames)) {
+      finalName = generateUniqueName(finalName, existingNames, showRename.isFolder);
+    }
+
+    let newKey: string;
+    if (showRename.isFolder) {
+      const pathParts = showRename.key.split('/').filter(Boolean);
+      pathParts.pop();
+      const parentPath = pathParts.length > 0 ? pathParts.join('/') + '/' : '';
+      newKey = parentPath + finalName + '/';
+    } else {
+      const lastSlash = showRename.key.lastIndexOf('/');
+      const dirPath = lastSlash >= 0 ? showRename.key.substring(0, lastSlash + 1) : '';
+      newKey = dirPath + finalName;
+    }
+
+    if (showRename.key === newKey) {
       setShowRename(null);
       setNewName('');
-      loadObjects();
+      return;
+    }
 
-      const msg = finalName !== originalName
-        ? `Renamed to "${finalName}"`
-        : `Renamed`;
+    // Optimistic update - update objects list immediately
+    const renamedObj = showRename;
+    const previousObjects = objects;
+    setObjects(prev => prev.map(obj =>
+      obj.key === renamedObj.key ? { ...obj, key: newKey } : obj
+    ).sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      return a.key.localeCompare(b.key);
+    }));
+    setShowRename(null);
+    setNewName('');
+
+    const msg = finalName !== originalName
+      ? `Renamed to "${finalName}"`
+      : `Renamed`;
+
+    try {
+      await api.renameObject(selectedBucket, renamedObj.key, newKey);
       showToastMsg(msg);
     } catch (err: any) {
+      // Rollback on error
+      setObjects(previousObjects);
       showToastMsg(err.message || 'Rename failed', 'error');
     }
   };
@@ -588,15 +632,15 @@ export default function App() {
 
   // Not configured - show setup wizard
   if (configured === false) {
-    return <SetupPage onSetupComplete={() => {
+    return <Suspense fallback={null}><SetupPage onSetupComplete={() => {
       checkAuth();
       showToastMsg('Setup complete! Please log in.');
-    }} />;
+    }} /></Suspense>;
   }
 
   // Not authenticated - show login
   if (!authenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <Suspense fallback={null}><LoginPage onLogin={handleLogin} /></Suspense>;
   }
 
   // Authenticated - show app
@@ -679,6 +723,9 @@ export default function App() {
               onContextMenu={handleContextMenu}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onLoadMore={loadMore}
             />
           )}
         </div>
@@ -720,63 +767,65 @@ export default function App() {
         </ContextMenu>
       )}
 
-      <CreateBucketModal
-        isOpen={showNewBucket}
-        value={newName}
-        onChange={setNewName}
-        onClose={() => { setNewName(''); setShowNewBucket(false); }}
-        onCreate={handleCreateBucket}
-      />
+      <Suspense fallback={null}>
+        <CreateBucketModal
+          isOpen={showNewBucket}
+          value={newName}
+          onChange={setNewName}
+          onClose={() => { setNewName(''); setShowNewBucket(false); }}
+          onCreate={handleCreateBucket}
+        />
 
-      <CreateFolderModal
-        isOpen={showNewFolder}
-        value={newName}
-        onChange={setNewName}
-        onClose={() => { setNewName(''); setShowNewFolder(false); }}
-        onCreate={handleCreateFolder}
-      />
+        <CreateFolderModal
+          isOpen={showNewFolder}
+          value={newName}
+          onChange={setNewName}
+          onClose={() => { setNewName(''); setShowNewFolder(false); }}
+          onCreate={handleCreateFolder}
+        />
 
-      <RenameModal
-        isOpen={!!showRename}
-        value={newName}
-        onChange={setNewName}
-        onClose={() => { setNewName(''); setShowRename(null); }}
-        onRename={handleRename}
-      />
+        <RenameModal
+          isOpen={!!showRename}
+          value={newName}
+          onChange={setNewName}
+          onClose={() => { setNewName(''); setShowRename(null); }}
+          onRename={handleRename}
+        />
 
-      <DeleteModal
-        object={showDelete}
-        onClose={() => setShowDelete(null)}
-        onDelete={handleDelete}
-      />
+        <DeleteModal
+          object={showDelete}
+          onClose={() => setShowDelete(null)}
+          onDelete={handleDelete}
+        />
 
-      <DeleteBucketModal
-        bucketName={showDeleteBucket}
-        onClose={() => setShowDeleteBucket(null)}
-        onDelete={() => { handleDeleteBucket(showDeleteBucket!); setShowDeleteBucket(null); }}
-      />
+        <DeleteBucketModal
+          bucketName={showDeleteBucket}
+          onClose={() => setShowDeleteBucket(null)}
+          onDelete={() => { handleDeleteBucket(showDeleteBucket!); setShowDeleteBucket(null); }}
+        />
 
-      <ConnectionManager
-        isOpen={showConnectionManager}
-        onClose={() => setShowConnectionManager(false)}
-        onConnectionChange={handleConnectionChange}
-      />
+        <ConnectionManager
+          isOpen={showConnectionManager}
+          onClose={() => setShowConnectionManager(false)}
+          onConnectionChange={handleConnectionChange}
+        />
 
-      <CommandPalette
-        isOpen={showCommandPalette}
-        buckets={buckets}
-        selectedBucket={selectedBucket}
-        currentPath={currentPath}
-        onClose={() => setShowCommandPalette(false)}
-        onSelectBucket={(name) => { setSelectedBucket(name); setCurrentPath(''); }}
-        onNavigateToRoot={() => setCurrentPath('')}
-        onGoBack={handleGoBack}
-        onRefresh={() => loadObjects()}
-        onNewFolder={() => { setNewName(''); setShowNewFolder(true); }}
-        onUpload={() => fileInputRef.current?.click()}
-        onOpenConnections={() => setShowConnectionManager(true)}
-        onNewBucket={() => { setNewName(''); setShowNewBucket(true); }}
-      />
+        <CommandPalette
+          isOpen={showCommandPalette}
+          buckets={buckets}
+          selectedBucket={selectedBucket}
+          currentPath={currentPath}
+          onClose={() => setShowCommandPalette(false)}
+          onSelectBucket={(name) => { setSelectedBucket(name); setCurrentPath(''); }}
+          onNavigateToRoot={() => setCurrentPath('')}
+          onGoBack={handleGoBack}
+          onRefresh={() => loadObjects()}
+          onNewFolder={() => { setNewName(''); setShowNewFolder(true); }}
+          onUpload={() => fileInputRef.current?.click()}
+          onOpenConnections={() => setShowConnectionManager(true)}
+          onNewBucket={() => { setNewName(''); setShowNewBucket(true); }}
+        />
+      </Suspense>
 
       <input
         ref={fileInputRef}
@@ -793,7 +842,9 @@ export default function App() {
 
       {/* Welcome message for new users */}
       {!activeConnection && (
-        <WelcomeMessage onConfigure={() => setShowConnectionManager(true)} />
+        <Suspense fallback={null}>
+          <WelcomeMessage onConfigure={() => setShowConnectionManager(true)} />
+        </Suspense>
       )}
 
       {/* Network status indicator */}

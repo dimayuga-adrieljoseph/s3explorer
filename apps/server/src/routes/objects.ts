@@ -52,8 +52,10 @@ router.get('/:bucket', async (req: Request, res: Response) => {
     }
 
     const prefix = (req.query.prefix as string) || '';
-    const { objects, prefixes } = await s3.listObjects(bucket, prefix);
-    res.json({ objects, prefixes, bucket, prefix });
+    const maxKeys = req.query.maxKeys ? parseInt(req.query.maxKeys as string, 10) : undefined;
+    const continuationToken = req.query.continuationToken ? (req.query.continuationToken as string) : undefined;
+    const { objects, prefixes, nextContinuationToken, isTruncated } = await s3.listObjects(bucket, prefix, '/', maxKeys, continuationToken);
+    res.json({ objects, prefixes, bucket, prefix, nextContinuationToken, isTruncated });
   } catch (error: any) {
     console.error('Error listing objects:', error);
     const { message, s3Code, status } = getS3ErrorDetails(error);

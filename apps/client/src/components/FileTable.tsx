@@ -15,6 +15,9 @@ interface FileTableProps {
     onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
     onSelect: (key: string, selected: boolean) => void;
     onSelectAll: (selected: boolean) => void;
+    hasMore?: boolean;
+    loadingMore?: boolean;
+    onLoadMore?: () => void;
 }
 
 interface RowProps {
@@ -129,7 +132,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
 FileRow.displayName = 'FileRow';
 
 // Standard table row for non-virtualized rendering
-function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isSelected, index }: {
+function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isSelected, index, skipAnimations }: {
     obj: S3Object;
     onNavigate: (obj: S3Object) => void;
     onDownload: (obj: S3Object) => void;
@@ -137,13 +140,14 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isS
     onSelect: (key: string, selected: boolean) => void;
     isSelected: boolean;
     index: number;
+    skipAnimations: boolean;
 }) {
     const fileName = getFileName(obj.key);
 
     return (
         <tr
-            className={`file-row stagger-item ${obj.isFolder ? 'is-folder' : ''} ${isSelected ? 'bg-accent-purple/10' : ''}`}
-            style={{ animationDelay: `${index * 25}ms` }}
+            className={`file-row ${!skipAnimations ? 'stagger-item' : ''} ${obj.isFolder ? 'is-folder' : ''} ${isSelected ? 'bg-accent-purple/10' : ''}`}
+            style={!skipAnimations ? { animationDelay: `${index * 25}ms` } : undefined}
             onContextMenu={e => onContextMenu(e, obj)}
             onClick={() => obj.isFolder && onNavigate(obj)}
             onKeyDown={(e) => obj.isFolder && e.key === 'Enter' && onNavigate(obj)}
@@ -214,7 +218,7 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onSelect, isS
     );
 }
 
-export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect, onSelectAll }: FileTableProps) {
+export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect, onSelectAll, hasMore, loadingMore, onLoadMore }: FileTableProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Use virtualization for large lists
@@ -278,48 +282,86 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                         width="100%"
                         overscanCount={PAGINATION.OVERSCAN_COUNT}
                         itemData={{ objects, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect }}
+                        onItemsRendered={({ visibleStopIndex }) => {
+                            if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= objects.length - 20) {
+                                onLoadMore();
+                            }
+                        }}
                     >
                         {FileRow}
                     </List>
                 </div>
+                {loadingMore && (
+                    <div className="flex items-center justify-center py-3 text-foreground-muted text-sm">
+                        <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading more...
+                    </div>
+                )}
             </div>
         );
     }
 
     // Standard table for smaller lists (with animations)
+    const skipAnimations = objects.length > 100;
+
     return (
-        <table className="table" role="grid" aria-label="Files and folders">
-            <thead>
-                <tr>
-                    <th scope="col" className="w-10">
-                        <div className="flex items-center justify-center">
-                            <SelectCheckbox
-                                checked={allSelected}
-                                onChange={() => onSelectAll(!allSelected)}
-                                ariaLabel={allSelected ? 'Deselect all' : 'Select all'}
-                            />
-                        </div>
-                    </th>
-                    <th scope="col">Name</th>
-                    <th scope="col" className="w-[72px] hidden sm:table-cell !text-center !px-2">Size</th>
-                    <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">Modified</th>
-                    <th scope="col" className="w-[52px] sm:w-[64px]"><span className="sr-only">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                {objects.map((obj, i) => (
-                    <StandardRow
-                        key={obj.key}
-                        obj={obj}
-                        onNavigate={onNavigate}
-                        onDownload={onDownload}
-                        onContextMenu={onContextMenu}
-                        onSelect={onSelect}
-                        isSelected={selectedKeys.has(obj.key)}
-                        index={i}
-                    />
-                ))}
-            </tbody>
-        </table>
+        <>
+            <table className="table" role="grid" aria-label="Files and folders">
+                <thead>
+                    <tr>
+                        <th scope="col" className="w-10">
+                            <div className="flex items-center justify-center">
+                                <SelectCheckbox
+                                    checked={allSelected}
+                                    onChange={() => onSelectAll(!allSelected)}
+                                    ariaLabel={allSelected ? 'Deselect all' : 'Select all'}
+                                />
+                            </div>
+                        </th>
+                        <th scope="col">Name</th>
+                        <th scope="col" className="w-[72px] hidden sm:table-cell !text-center !px-2">Size</th>
+                        <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">Modified</th>
+                        <th scope="col" className="w-[52px] sm:w-[64px]"><span className="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {objects.map((obj, i) => (
+                        <StandardRow
+                            key={obj.key}
+                            obj={obj}
+                            onNavigate={onNavigate}
+                            onDownload={onDownload}
+                            onContextMenu={onContextMenu}
+                            onSelect={onSelect}
+                            isSelected={selectedKeys.has(obj.key)}
+                            index={i}
+                            skipAnimations={skipAnimations}
+                        />
+                    ))}
+                </tbody>
+            </table>
+            {loadingMore && (
+                <div className="flex items-center justify-center py-3 text-foreground-muted text-sm">
+                    <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Loading more...
+                </div>
+            )}
+            {hasMore && !loadingMore && (
+                <div className="flex items-center justify-center py-4">
+                    <button
+                        onClick={onLoadMore}
+                        className="btn btn-ghost text-sm text-foreground-secondary hover:text-foreground"
+                    >
+                        Load more files...
+                    </button>
+                </div>
+            )}
+        </>
     );
 }

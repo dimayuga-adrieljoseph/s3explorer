@@ -120,13 +120,17 @@ export async function deleteBucket(name: string): Promise<void> {
 export async function listObjects(
   bucket: string,
   prefix: string = '',
-  delimiter: string = '/'
-): Promise<{ objects: ObjectInfo[]; prefixes: string[] }> {
+  delimiter: string = '/',
+  maxKeys?: number,
+  continuationToken?: string
+): Promise<{ objects: ObjectInfo[]; prefixes: string[]; nextContinuationToken?: string; isTruncated: boolean }> {
   const client = getS3Client();
   const command = new ListObjectsV2Command({
     Bucket: bucket,
     Prefix: prefix,
     Delimiter: delimiter,
+    ...(maxKeys !== undefined && { MaxKeys: maxKeys }),
+    ...(continuationToken !== undefined && { ContinuationToken: continuationToken }),
   });
   const response = await client.send(command);
 
@@ -149,7 +153,12 @@ export async function listObjects(
     });
   });
 
-  return { objects, prefixes };
+  return {
+    objects,
+    prefixes,
+    nextContinuationToken: response.NextContinuationToken,
+    isTruncated: response.IsTruncated ?? false,
+  };
 }
 
 export async function getObjectUrl(
@@ -349,30 +358,58 @@ export async function deleteFolder(bucket: string, prefix: string): Promise<void
   }
 }
 
+async function parallelExecute<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    await Promise.all(batch.map(fn));
+  }
+}
+
 export async function renameObject(
   bucket: string,
   oldKey: string,
   newKey: string
 ): Promise<void> {
+  if (oldKey === newKey) return; // No-op if name unchanged
+
   const client = getS3Client();
   const isFolder = oldKey.endsWith('/');
 
   if (isFolder) {
     const keys = await listAllObjectKeys(client, bucket, oldKey);
 
-    for (const key of keys) {
-      const newObjKey = key.startsWith(oldKey)
+    // Build key mappings
+    const keyMappings = keys.map(key => ({
+      oldKey: key,
+      newKey: key.startsWith(oldKey)
         ? `${newKey}${key.slice(oldKey.length)}`
-        : key.replace(oldKey, newKey);
+        : key.replace(oldKey, newKey),
+    }));
 
+    // Phase 1: Copy ALL objects to new location (parallel, 10 concurrent)
+    await parallelExecute(keyMappings, 10, async (mapping) => {
       const copyCommand = new CopyObjectCommand({
         Bucket: bucket,
-        CopySource: encodeURIComponent(`${bucket}/${key}`),
-        Key: newObjKey,
+        CopySource: encodeURIComponent(`${bucket}/${mapping.oldKey}`),
+        Key: mapping.newKey,
       });
       await client.send(copyCommand);
+    });
 
-      await deleteObjectWithClient(client, bucket, key);
+    // Phase 2: Batch delete originals using DeleteObjectsCommand (chunks of 1000)
+    for (const keyBatch of chunk(keys, 1000)) {
+      const deleteCommand = new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: {
+          Objects: keyBatch.map(Key => ({ Key })),
+          Quiet: true,
+        },
+      });
+      await client.send(deleteCommand);
     }
   } else {
     const copyCommand = new CopyObjectCommand({
