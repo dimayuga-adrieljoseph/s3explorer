@@ -328,9 +328,13 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
             <div className="animate-fadeIn">
               <div className="space-y-2">
                 {loading ? (
-                  <div className="flex items-center justify-center py-8 text-foreground-muted">
-                    <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-                    Loading...
+                  <div className="flex items-center justify-center py-8 text-foreground-muted gap-3">
+                    <span className="premium-spinner">
+                      <span className="premium-spinner-dot" />
+                      <span className="premium-spinner-dot" />
+                      <span className="premium-spinner-dot" />
+                    </span>
+                    Loading…
                   </div>
                 ) : connections.length === 0 ? (
                   <div className="text-center py-6 border border-dashed border-border rounded-lg bg-background hover:border-accent-purple/30 hover:bg-accent-purple/5 transition-all cursor-pointer group" onClick={() => { resetForm(); setView('form'); }}>

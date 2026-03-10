@@ -1,7 +1,19 @@
-/* v 1.0 */
+/* v 2.0 — Premium animations */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ═══════════════════════════════════════════
+   Premium easing curves (spring-physics)
+   ═══════════════════════════════════════════ */
+:root {
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring-heavy: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
 /* High-quality text rendering for all screens */
 html {
@@ -73,8 +85,6 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Instant theme transition */
-
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -142,6 +152,9 @@ body {
   background: var(--foreground-muted);
 }
 
+/* ═══════════════════════════════════════════
+   Buttons — Spring-physics micro-interactions
+   ═══════════════════════════════════════════ */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -153,10 +166,16 @@ body {
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
-  transition: background 50ms ease, color 50ms ease, transform 50ms ease, filter 50ms ease;
+  transition:
+    background 180ms var(--ease-out-quart),
+    color 180ms var(--ease-out-quart),
+    transform 280ms var(--ease-spring),
+    filter 180ms var(--ease-out-quart),
+    box-shadow 280ms var(--ease-spring);
   outline: none;
   white-space: nowrap;
   touch-action: manipulation;
+  will-change: transform;
 }
 
 .btn:focus-visible {
@@ -174,7 +193,8 @@ body {
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  transition-duration: 80ms;
 }
 
 .btn-primary {
@@ -184,12 +204,14 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-pink);
-  filter: brightness(1.1);
+  filter: brightness(1.12);
+  box-shadow: 0 0 20px rgba(192, 73, 255, 0.25);
 }
 
 .btn-primary:active:not(:disabled) {
   filter: brightness(0.95);
   opacity: 1;
+  box-shadow: none;
 }
 
 /* Fix for label acting as button (upload) */
@@ -235,7 +257,8 @@ label.btn:focus-within {
 
 .btn-danger:hover:not(:disabled) {
   background: var(--accent-red);
-  filter: brightness(1.1);
+  filter: brightness(1.12);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .btn-icon {
@@ -256,6 +279,9 @@ label.btn:focus-within {
   opacity: 0.9;
 }
 
+/* ═══════════════════════════════════════════
+   Inputs
+   ═══════════════════════════════════════════ */
 .input {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -264,7 +290,9 @@ label.btn:focus-within {
   border-radius: 0.5rem;
   color: var(--foreground);
   font-size: 0.875rem;
-  transition: all 50ms ease;
+  transition:
+    border-color 200ms var(--ease-out-quart),
+    box-shadow 200ms var(--ease-out-quart);
   outline: none;
 }
 
@@ -274,6 +302,7 @@ label.btn:focus-within {
 
 .input:focus {
   border-color: var(--accent-pink);
+  box-shadow: 0 0 0 3px rgba(192, 73, 255, 0.1);
 }
 
 .input::placeholder {
@@ -295,6 +324,9 @@ select.input option {
   padding: 0.5rem;
 }
 
+/* ═══════════════════════════════════════════
+   Cards
+   ═══════════════════════════════════════════ */
 .card {
   background: var(--background-secondary);
   border: 1px solid var(--border);
@@ -302,6 +334,9 @@ select.input option {
   overflow: hidden;
 }
 
+/* ═══════════════════════════════════════════
+   Sidebar — Fluid transitions
+   ═══════════════════════════════════════════ */
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -309,7 +344,11 @@ select.input option {
   padding: 0.625rem 0.875rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 50ms ease, color 50ms ease, border-color 50ms ease;
+  transition:
+    background 200ms var(--ease-out-quart),
+    color 200ms var(--ease-out-quart),
+    border-color 200ms var(--ease-out-quart),
+    transform 280ms var(--ease-spring);
   color: var(--foreground-secondary);
   font-size: 0.875rem;
   border: 1px solid transparent;
@@ -325,7 +364,8 @@ select.input option {
 }
 
 .sidebar-item:active {
-  opacity: 0.8;
+  transform: scale(0.98);
+  transition-duration: 80ms;
 }
 
 .sidebar-item.active {
@@ -338,6 +378,9 @@ select.input option {
   color: var(--accent-pink);
 }
 
+/* ═══════════════════════════════════════════
+   Table — Smooth row interactions
+   ═══════════════════════════════════════════ */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -370,7 +413,7 @@ select.input option {
   padding: 0.75rem 0.75rem;
   font-size: 0.875rem;
   border-bottom: 1px solid var(--border);
-  transition: background 30ms ease;
+  transition: background 150ms var(--ease-out-quart);
   vertical-align: middle;
 }
 
@@ -388,7 +431,7 @@ select.input option {
 }
 
 .table tbody tr {
-  transition: background 30ms ease;
+  transition: background 150ms var(--ease-out-quart);
 }
 
 .table tbody tr:hover {
@@ -397,13 +440,16 @@ select.input option {
 
 .table tbody tr .row-actions {
   opacity: 0;
-  transition: opacity 30ms ease;
+  transition: opacity 150ms var(--ease-out-quart);
 }
 
 .table tbody tr:hover .row-actions {
   opacity: 1;
 }
 
+/* ═══════════════════════════════════════════
+   File rows — Polished hover states
+   ═══════════════════════════════════════════ */
 .file-row {
   cursor: default;
 }
@@ -414,16 +460,23 @@ select.input option {
 
 .file-row.is-folder:hover .file-name {
   color: var(--accent-pink);
+  transition: color 200ms var(--ease-out-quart);
 }
 
 .file-icon {
-  transition: color 50ms ease;
+  transition: color 200ms var(--ease-out-quart), transform 280ms var(--ease-spring);
+}
+
+.file-row.is-folder:hover .file-icon {
+  transform: scale(1.08);
 }
 
 .file-chevron {
   opacity: 0;
-  transform: translateX(-4px);
-  transition: all 50ms ease;
+  transform: translateX(-6px);
+  transition:
+    opacity 200ms var(--ease-out-quart),
+    transform 280ms var(--ease-spring);
 }
 
 .file-row.is-folder:hover .file-chevron {
@@ -431,58 +484,100 @@ select.input option {
   transform: translateX(0);
 }
 
+/* ═══════════════════════════════════════════
+   Keyframes — Premium spring animations
+   ═══════════════════════════════════════════ */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes shimmerPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUpFade {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(16px);
+    transform: translateX(-50%) translateY(20px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
-}
-
-.animate-slide-up-fade {
-  animation: slideUpFade 300ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.animate-slideUp {
-  animation: slideUpFade 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes spin {
@@ -495,13 +590,159 @@ select.input option {
   to { transform: rotate(360deg); }
 }
 
+@keyframes progressGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(192, 73, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(192, 73, 255, 0.5), 0 0 32px rgba(147, 51, 234, 0.2);
+  }
+}
+
+@keyframes gradientSlide {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes gentlePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes dropPulse {
+  0%, 100% {
+    border-color: var(--accent-pink);
+    box-shadow: inset 0 0 40px rgba(192, 73, 255, 0.05);
+  }
+  50% {
+    border-color: var(--accent-purple);
+    box-shadow: inset 0 0 60px rgba(147, 51, 234, 0.08);
+  }
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes contentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Animation utility classes
+   ═══════════════════════════════════════════ */
+.animate-slide-up-fade {
+  animation: slideUpFade 400ms var(--ease-spring);
+}
+
+.animate-slideUp {
+  animation: slideUpFade 400ms var(--ease-spring);
+}
+
 .animate-spin-once {
-  animation: spin-once 0.5s ease-in-out;
+  animation: spin-once 0.5s var(--ease-spring);
+}
+
+.animate-fadeIn {
+  animation: fadeIn 250ms var(--ease-out-quart);
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 400ms var(--ease-spring);
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown 400ms var(--ease-spring);
+}
+
+.animate-scaleIn {
+  animation: scaleIn 400ms var(--ease-spring) 60ms both;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 350ms var(--ease-spring);
+}
+
+.animate-slideInRight {
+  animation: slideInRight 400ms var(--ease-spring);
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Stagger items — Smooth cascade entrance
+   ═══════════════════════════════════════════ */
+.stagger-item {
+  opacity: 0;
+  animation: contentReveal 350ms var(--ease-spring) forwards;
+}
+
+/* ═══════════════════════════════════════════
+   Create bucket button
+   ═══════════════════════════════════════════ */
+.create-bucket-btn {
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 200ms var(--ease-out-quart);
+}
+
+.create-bucket-btn:hover {
+  text-shadow: 0 0 8px var(--accent-pink);
+  filter: drop-shadow(0 0 3px var(--accent-pink));
+}
+
+.create-bucket-btn:focus-visible {
+  outline: 2px solid var(--accent-pink);
+  outline-offset: 2px;
 }
 
 /* Logo spin on hover */
 .logo-spin {
-  transition: transform 0.4s ease;
+  transition: transform 0.4s var(--ease-spring);
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
@@ -510,7 +751,7 @@ select.input option {
   animation: spin 2.5s linear infinite;
 }
 
-/* Theme-aware logo - inverts in dark mode, normal in light mode */
+/* Theme-aware logo */
 .logo-themed {
   filter: invert(1) !important;
   image-rendering: -webkit-optimize-contrast;
@@ -530,44 +771,9 @@ select.input option {
   filter: invert(0) drop-shadow(0 0 4px rgba(0,0,0,0.15)) !important;
 }
 
-.animate-fadeIn { animation: none; opacity: 1; }
-.animate-fadeInUp { animation: fadeInUp 300ms cubic-bezier(0.22, 1, 0.36, 1); }
-.animate-fadeInDown { animation: fadeInDown 300ms cubic-bezier(0.22, 1, 0.36, 1); }
-.animate-scaleIn { animation: scaleIn 320ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
-.animate-slideInLeft { animation: slideInLeft 300ms cubic-bezier(0.22, 1, 0.36, 1); }
-.animate-slideInRight { animation: slideInRight 300ms cubic-bezier(0.22, 1, 0.36, 1); }
-.animate-spin { animation: spin 1s linear infinite; }
-
-.stagger-item {
-  opacity: 0;
-  animation: fadeInUp 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Create bucket button - subtle glow on hover */
-.create-bucket-btn {
-  border-radius: 0.5rem;
-  cursor: pointer;
-}
-
-.create-bucket-btn:hover {
-  text-shadow: 0 0 8px var(--accent-pink);
-  filter: drop-shadow(0 0 3px var(--accent-pink));
-}
-
-.create-bucket-btn:focus-visible {
-  outline: 2px solid var(--accent-pink);
-  outline-offset: 2px;
-}
-
-.modal-backdrop {
-  background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.6));
-  backdrop-filter: blur(8px);
-  animation: none;
-  opacity: 1;
-  overscroll-behavior: contain;
-  touch-action: manipulation;
-}
-
+/* ═══════════════════════════════════════════
+   Modal — Cinematic backdrop + spring content
+   ═══════════════════════════════════════════ */
 :root {
   --modal-backdrop-bg: rgba(0, 0, 0, 0.6);
   --command-palette-backdrop: rgba(0, 0, 0, 0.7);
@@ -580,25 +786,57 @@ select.input option {
   --command-palette-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 60px rgba(124, 58, 237, 0.08);
 }
 
+.modal-backdrop {
+  background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: modalBackdropIn 300ms var(--ease-out-quart) both;
+  overscroll-behavior: contain;
+  touch-action: manipulation;
+}
+
 @keyframes modalBackdropIn {
   from {
     opacity: 0;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
   }
   to {
     opacity: 1;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 }
 
 .modal-content {
-  animation: modalContentIn 320ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
+  animation: modalContentIn 450ms var(--ease-spring) 80ms both;
 }
 
 @keyframes modalContentIn {
   from {
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
+    transform: scale(0.94) translateY(12px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Context menu — Origin-aware spring scale
+   ═══════════════════════════════════════════ */
+.context-menu {
+  animation: contextMenuIn 200ms var(--ease-spring);
+  transform-origin: top left;
+}
+
+@keyframes contextMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
   }
   to {
     opacity: 1;
@@ -606,42 +844,68 @@ select.input option {
   }
 }
 
-.context-menu {
-  animation: scaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: top left;
-}
-
 .context-menu-item {
-  transition: background 30ms ease;
+  transition: background 120ms var(--ease-out-quart);
 }
 
+/* ═══════════════════════════════════════════
+   Progress bar — Animated gradient with glow
+   ═══════════════════════════════════════════ */
 .progress-bar {
   height: 4px;
   background: var(--background-tertiary);
   border-radius: 9999px;
   overflow: hidden;
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink));
-  border-radius: 9999px;
-  transition: width 100ms ease;
-}
-
-.skeleton {
-  background: linear-gradient(90deg, var(--background-tertiary) 25%, var(--background-hover) 50%, var(--background-tertiary) 75%);
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink), var(--accent-purple));
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease infinite;
-  border-radius: 0.25rem;
+  border-radius: 9999px;
+  transition: width 300ms var(--ease-spring);
+  animation: gradientSlide 2s linear infinite;
+  position: relative;
 }
 
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  bottom: -2px;
+  width: 20px;
+  background: radial-gradient(circle at right, rgba(192, 73, 255, 0.6), transparent);
+  border-radius: 9999px;
+  animation: progressGlow 1.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Skeleton — Premium shimmer with pulse
+   ═══════════════════════════════════════════ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--background-tertiary) 0%,
+    var(--background-hover) 20%,
+    var(--background-tertiary) 40%,
+    var(--background-tertiary) 100%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 2s var(--ease-in-out) infinite, shimmerPulse 2s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+/* ═══════════════════════════════════════════
+   Empty state — Elegant entrance
+   ═══════════════════════════════════════════ */
 .empty-state {
-  animation: fadeInUp 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInUp 500ms var(--ease-spring);
 }
 
 .empty-state-icon {
-  animation: fadeInUp 150ms ease 50ms both;
+  animation: iconFloat 3s ease-in-out infinite, fadeIn 400ms var(--ease-out-quart) 100ms both;
 }
 
 /* Prevent layout shift during loading */
@@ -659,20 +923,40 @@ header {
   contain: layout;
 }
 
+/* ═══════════════════════════════════════════
+   Toast — Slide + auto-dismiss progress
+   ═══════════════════════════════════════════ */
 .toast {
-  animation: slideInRight 100ms ease;
+  animation: slideInRight 400ms var(--ease-spring);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Command Palette Styles */
+.toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.3;
+  transform-origin: left;
+  animation: toastProgress 3s linear forwards;
+}
+
+/* ═══════════════════════════════════════════
+   Command Palette — Raycast-style entrance
+   ═══════════════════════════════════════════ */
 .command-palette-backdrop {
   background: var(--command-palette-backdrop, rgba(0, 0, 0, 0.7));
-  backdrop-filter: blur(8px);
-  animation: none;
-  opacity: 1;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeIn 200ms var(--ease-out-quart) both;
 }
 
 .command-palette-content {
-  animation: commandPaletteIn 300ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+  animation: commandPaletteIn 400ms var(--ease-spring) 60ms both;
   box-shadow: var(--command-palette-shadow,
     0 0 0 1px rgba(255, 255, 255, 0.05),
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
@@ -682,22 +966,28 @@ header {
 @keyframes commandPaletteIn {
   from {
     opacity: 0;
-    transform: scale(0.97) translateY(-10px);
+    transform: scale(0.95) translateY(-16px);
+    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+    filter: blur(0);
   }
 }
 
-/* Railway-style glass morphism */
+/* ═══════════════════════════════════════════
+   Glass morphism
+   ═══════════════════════════════════════════ */
 .glass {
   background: rgba(15, 10, 26, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Bento grid styles */
+/* ═══════════════════════════════════════════
+   Bento grid — Refined hover interactions
+   ═══════════════════════════════════════════ */
 .bento-grid {
   display: grid;
   gap: 1rem;
@@ -709,16 +999,23 @@ header {
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1.5rem;
-  transition: all 75ms ease;
+  transition:
+    border-color 200ms var(--ease-out-quart),
+    transform 400ms var(--ease-spring),
+    box-shadow 300ms var(--ease-out-quart);
 }
 
 .bento-item:hover {
   border-color: var(--border-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(192, 73, 255, 0.05);
 }
 
-/* Railway gradient border effect */
+/* ═══════════════════════════════════════════
+   Gradient border effect
+   ═══════════════════════════════════════════ */
 .gradient-border {
   position: relative;
 }
@@ -736,11 +1033,79 @@ header {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 75ms ease;
+  transition: opacity 250ms var(--ease-out-quart);
 }
 
 .gradient-border:hover::before {
   opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   Drop overlay — Animated border pulse
+   ═══════════════════════════════════════════ */
+.drop-overlay-border {
+  animation: dropPulse 1.5s ease-in-out infinite;
+}
+
+.drop-overlay-icon {
+  animation: iconFloat 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Premium loading spinner
+   ═══════════════════════════════════════════ */
+.premium-spinner {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.premium-spinner-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.premium-spinner-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.premium-spinner-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+/* ═══════════════════════════════════════════
+   Premium loading bar (top of page)
+   ═══════════════════════════════════════════ */
+.loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+}
+
+.loading-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
+  animation: loadingBarSlide 1.2s ease-in-out infinite;
+}
+
+@keyframes loadingBarSlide {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 /* Kbd styles for keyboard shortcuts */
@@ -748,14 +1113,13 @@ kbd {
   font-family: inherit;
 }
 
-/* Clean focus states - only for non-input elements */
+/* Clean focus states */
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent-pink);
   outline-offset: 2px;
 }
 
-/* Input elements already have their own focus styles */
 input:focus-visible,
 textarea:focus-visible {
   outline: none;
@@ -772,15 +1136,15 @@ textarea:focus-visible {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
-/* Mobile-first touch targets */
+/* ═══════════════════════════════════════════
+   Responsive adjustments
+   ═══════════════════════════════════════════ */
 @media (max-width: 640px) {
-  /* Ensure minimum touch target sizes (44px per Apple HIG) */
   .btn-icon {
     min-width: 44px;
     min-height: 44px;
   }
 
-  /* Larger table cells for easier tapping */
   .table td {
     padding: 0.625rem 0.75rem;
   }
@@ -790,13 +1154,11 @@ textarea:focus-visible {
     font-size: 0.7rem;
   }
 
-  /* Sidebar items - compact on mobile */
   .sidebar-item {
     min-height: 22px;
     padding: 0.25rem 0.75rem;
   }
 
-  /* Context menu items */
   .context-menu-item {
     min-height: 44px;
     padding: 0.75rem 1rem;
@@ -811,7 +1173,7 @@ textarea:focus-visible {
     bottom: 0;
     z-index: 50;
     transform: translateX(-100%);
-    transition: transform 100ms ease;
+    transition: transform 350ms var(--ease-spring);
   }
 
   .sidebar.open {
@@ -823,6 +1185,7 @@ textarea:focus-visible {
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 40;
+    animation: fadeIn 200ms var(--ease-out-quart);
   }
 
   .btn {
@@ -844,7 +1207,6 @@ textarea:focus-visible {
     max-width: 100px;
   }
 
-  /* Even smaller font on very small screens */
   .btn {
     font-size: 0.75rem;
   }
