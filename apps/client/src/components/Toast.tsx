@@ -14,14 +14,14 @@ export function Toast({ message, type = 'success', onClose }: ToastProps) {
     }, [onClose]);
 
     const isSuccess = type === 'success';
-    const bgColor = isSuccess ? 'bg-accent-green/15' : 'bg-accent-red/15';
+    const bgColor = isSuccess ? 'bg-accent-green/20' : 'bg-accent-red/20';
     const textColor = isSuccess ? 'text-accent-green' : 'text-accent-red';
-    const borderColor = isSuccess ? 'border-accent-green/25' : 'border-accent-red/25';
+    const borderColor = isSuccess ? 'border-accent-green/30' : 'border-accent-red/30';
     const iconBg = isSuccess ? 'bg-accent-green' : 'bg-accent-red';
 
     return (
         <div
-            className={`toast fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium ${bgColor} ${textColor} border ${borderColor} backdrop-blur-md shadow-lg`}
+            className={`toast fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${bgColor} ${textColor} border ${borderColor} dark:border-zinc-700`}
             role="alert"
             aria-live="polite"
         >

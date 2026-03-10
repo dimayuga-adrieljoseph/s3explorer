@@ -236,19 +236,17 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
 
     if (loading && objects.length === 0) {
         return (
-            <div className="p-3 sm:p-4 space-y-1" role="status" aria-label="Loading files">
-                {[...Array(8)].map((_, i) => (
+            <div className="p-3 sm:p-4 space-y-2" role="status" aria-label="Loading files">
+                {[...Array(5)].map((_, i) => (
                     <div
                         key={i}
-                        className="flex items-center gap-3 px-3 py-2.5 stagger-item"
-                        style={{ animationDelay: `${i * 50}ms` }}
+                        className="flex items-center gap-3 p-3 stagger-item"
+                        style={{ animationDelay: `${i * 40}ms` }}
                         aria-hidden="true"
                     >
-                        <div className="w-5 h-5 skeleton rounded-full" />
-                        <div className="w-5 h-5 skeleton rounded" />
-                        <div className="flex-1 h-3.5 skeleton rounded-full" style={{ maxWidth: `${55 + (i % 3) * 15}%` }} />
-                        <div className="w-14 h-3 skeleton rounded-full hidden sm:block" />
-                        <div className="w-16 h-3 skeleton rounded-full hidden md:block" />
+                        <div className="w-8 h-8 skeleton rounded" />
+                        <div className="flex-1 h-4 skeleton" />
+                        <div className="w-16 h-4 skeleton hidden sm:block" />
                     </div>
                 ))}
                 <span className="sr-only">Loading file list...</span>
@@ -294,13 +292,12 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                     </List>
                 </div>
                 {loadingMore && (
-                    <div className="flex items-center justify-center py-3 text-foreground-muted text-sm gap-2 animate-fadeIn">
-                        <span className="premium-spinner text-accent-pink">
-                            <span className="premium-spinner-dot" />
-                            <span className="premium-spinner-dot" />
-                            <span className="premium-spinner-dot" />
-                        </span>
-                        Loading more…
+                    <div className="flex items-center justify-center py-3 text-foreground-muted text-sm">
+                        <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading more...
                     </div>
                 )}
             </div>
@@ -347,13 +344,12 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                 </tbody>
             </table>
             {loadingMore && (
-                <div className="flex items-center justify-center py-3 text-foreground-muted text-sm gap-2 animate-fadeIn">
-                    <span className="premium-spinner text-accent-pink">
-                        <span className="premium-spinner-dot" />
-                        <span className="premium-spinner-dot" />
-                        <span className="premium-spinner-dot" />
-                    </span>
-                    Loading more…
+                <div className="flex items-center justify-center py-3 text-foreground-muted text-sm">
+                    <svg className="w-4 h-4 animate-spin mr-2" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Loading more...
                 </div>
             )}
             {hasMore && !loadingMore && (
