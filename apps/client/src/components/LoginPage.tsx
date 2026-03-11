@@ -100,7 +100,9 @@ export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
             {showReset
               ? resetSuccess
                 ? 'Your password has been reset'
-                : 'Enter your recovery token from server logs'
+                : canReset
+                  ? 'Enter your recovery token from server logs'
+                  : 'How to reset your password'
               : 'Enter your password to continue'}
           </p>
         </div>
@@ -115,6 +117,23 @@ export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
                   Password reset successfully. Please log in with your new password.
                 </div>
                 <button
+                  onClick={handleBackToLogin}
+                  className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Login
+                </button>
+              </div>
+            ) : !canReset ? (
+              <div className="space-y-4">
+                <p className="text-sm text-foreground-secondary leading-relaxed">
+                  Your password is set via the <code className="text-xs bg-background-tertiary px-1.5 py-0.5 rounded font-mono">APP_PASSWORD</code> environment variable.
+                </p>
+                <p className="text-sm text-foreground-secondary leading-relaxed">
+                  To change it, update the variable and restart the server.
+                </p>
+                <button
+                  type="button"
                   onClick={handleBackToLogin}
                   className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium flex items-center justify-center gap-2"
                 >
@@ -320,15 +339,13 @@ export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
                 )}
               </button>
 
-              {canReset && (
-                <button
-                  type="button"
-                  onClick={() => { setShowReset(true); setError(null); }}
-                  className="w-full text-sm text-foreground-muted hover:text-foreground transition-colors py-1"
-                >
-                  Forgot password?
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => { setShowReset(true); setError(null); }}
+                className="w-full text-sm text-foreground-muted hover:text-foreground transition-colors py-1"
+              >
+                Forgot password?
+              </button>
             </form>
           )}
         </div>
