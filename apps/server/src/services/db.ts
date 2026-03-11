@@ -201,11 +201,6 @@ export const preferences = {
   delete: (key: string) => prefDelete.run(key),
 };
 
-// Clear all sessions (used during password reset)
-export function clearAllSessions() {
-  db.prepare('DELETE FROM sessions').run();
-}
-
 // Cleanup expired sessions periodically
 setInterval(() => {
   const store = new SQLiteStore();

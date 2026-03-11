@@ -198,11 +198,11 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
         >
             {/* Header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-background-secondary/95 border-b border-border flex-shrink-0"
+                className="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-background-secondary border-b border-border flex-shrink-0"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <h3 className="text-sm font-medium truncate">{fileName}</h3>
+                    <h3 className="text-sm font-medium truncate text-foreground">{fileName}</h3>
                     {object.size > 0 && (
                         <span className="text-xs text-foreground-muted flex-shrink-0">{formatBytes(object.size)}</span>
                     )}

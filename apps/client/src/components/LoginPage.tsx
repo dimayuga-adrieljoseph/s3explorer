@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, AlertCircle, ArrowRight, Check, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowRight, Check } from 'lucide-react';
 import * as api from '../api';
 
 interface LoginPageProps {
@@ -12,15 +12,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Reset password state
-  const [showReset, setShowReset] = useState(false);
-  const [recoveryToken, setRecoveryToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,49 +29,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
-  const handleResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await api.resetPassword(recoveryToken.trim(), newPassword);
-      setResetSuccess(true);
-      setRecoveryToken('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setError(err.message || 'Password reset failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBackToLogin = () => {
-    setShowReset(false);
-    setResetSuccess(false);
-    setError(null);
-    setRecoveryToken('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setPassword('');
-  };
-
-  const requirements = [
-    { label: 'At least 12 characters', valid: newPassword.length >= 12 },
-    { label: 'Lowercase letter', valid: /[a-z]/.test(newPassword) },
-    { label: 'Uppercase letter', valid: /[A-Z]/.test(newPassword) },
-    { label: 'Number', valid: /[0-9]/.test(newPassword) },
-    { label: 'Special character', valid: /[^a-zA-Z0-9]/.test(newPassword) },
-  ];
-
-  const allRequirementsMet = requirements.every(r => r.valid);
-
   return (
     <div className="fixed inset-0 bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
@@ -93,155 +42,27 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             />
           </div>
           <h1 className="text-lg sm:text-xl font-semibold text-foreground">
-            {showReset ? 'Reset Password' : 'Welcome back'}
+            {showForgot ? 'Forgot Password' : 'Welcome back'}
           </h1>
           <p className="text-sm text-foreground-muted mt-1.5 sm:mt-2">
-            {showReset
-              ? resetSuccess
-                ? 'Your password has been reset'
-                : 'Enter your recovery token from server logs'
-              : 'Enter your password to continue'}
+            {showForgot ? 'How to reset your password' : 'Enter your password to continue'}
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-background-secondary border border-border rounded-xl p-4 sm:p-6">
-          {showReset ? (
-            resetSuccess ? (
-              <div className="space-y-4">
-                <div className="p-3 rounded-lg bg-accent-green/10 border border-accent-green/20 text-accent-green text-sm flex items-center gap-2" role="status">
-                  <Check className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  Password reset successfully. Please log in with your new password.
-                </div>
-                <button
-                  onClick={handleBackToLogin}
-                  className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Login
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleResetSubmit} className="space-y-3">
-                <div className="space-y-1.5">
-                  <label htmlFor="recovery-token" className="text-sm text-foreground-secondary">Recovery Token</label>
-                  <input
-                    id="recovery-token"
-                    type="text"
-                    value={recoveryToken}
-                    onChange={(e) => setRecoveryToken(e.target.value)}
-                    className="input font-mono h-11 sm:h-10 text-base sm:text-sm"
-                    placeholder="Paste token from server logs"
-                    required
-                    autoFocus
-                    autoComplete="off"
-                    spellCheck="false"
-                  />
-                  <p className="text-xs text-foreground-muted">
-                    Found in your server console output on startup.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="new-password" className="text-sm text-foreground-secondary">New Password</label>
-                  <div className="relative">
-                    <input
-                      id="new-password"
-                      type={showNewPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="input pr-12 font-mono h-11 sm:h-10 text-base sm:text-sm"
-                      placeholder="New password"
-                      required
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-foreground-muted hover:text-foreground transition-colors w-11"
-                      aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showNewPassword ? <EyeOff className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" /> : <Eye className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label htmlFor="confirm-new-password" className="text-sm text-foreground-secondary">Confirm Password</label>
-                  <div className="relative">
-                    <input
-                      id="confirm-new-password"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="input pr-12 font-mono h-11 sm:h-10 text-base sm:text-sm"
-                      placeholder="Confirm new password"
-                      required
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-foreground-muted hover:text-foreground transition-colors w-11"
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" /> : <Eye className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Password requirements */}
-                {newPassword && (
-                  <div className="space-y-1.5 py-1">
-                    {requirements.map((req, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          req.valid ? 'bg-accent-green/20 text-accent-green' : 'bg-background-tertiary text-foreground-muted'
-                        }`}>
-                          {req.valid && <Check className="w-2 h-2" />}
-                        </div>
-                        <span className={req.valid ? 'text-foreground' : 'text-foreground-secondary'}>
-                          {req.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {error && (
-                  <div id="reset-error" className="p-3 rounded-lg bg-accent-red/10 border border-accent-red/20 text-accent-red text-sm flex items-center gap-2" role="alert">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || !recoveryToken.trim() || !allRequirementsMet || newPassword !== confirmPassword}
-                  className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Resetting...
-                    </span>
-                  ) : (
-                    'Reset Password'
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleBackToLogin}
-                  className="w-full text-sm text-foreground-muted hover:text-foreground transition-colors py-1"
-                >
-                  Back to login
-                </button>
-              </form>
-            )
+          {showForgot ? (
+            <div className="space-y-4">
+              <p className="text-sm text-foreground-secondary leading-relaxed">
+                Your password is set via the <code className="text-xs bg-background-tertiary px-1.5 py-0.5 rounded font-mono">APP_PASSWORD</code> environment variable. To change it, update the variable and restart the server.
+              </p>
+              <button
+                onClick={() => setShowForgot(false)}
+                className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium"
+              >
+                Back to login
+              </button>
+            </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
@@ -321,7 +142,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
               <button
                 type="button"
-                onClick={() => { setShowReset(true); setError(null); }}
+                onClick={() => setShowForgot(true)}
                 className="w-full text-sm text-foreground-muted hover:text-foreground transition-colors py-1"
               >
                 Forgot password?

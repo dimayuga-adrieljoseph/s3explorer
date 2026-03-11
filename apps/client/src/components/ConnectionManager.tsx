@@ -536,9 +536,9 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                 {/* Test Result */}
                 {testResult && (
                   <div
-                    className={`p-3 rounded-lg text-sm flex items-center gap-2 ${testResult.success
-                      ? 'bg-accent-green/15 text-accent-green border border-accent-green/30 dark:border-zinc-700'
-                      : 'bg-accent-red/15 text-accent-red border border-accent-red/30 dark:border-zinc-700'
+                    className={`p-3 rounded-lg text-sm flex items-center gap-2 border border-border ${testResult.success
+                      ? 'bg-accent-green/15 text-accent-green'
+                      : 'bg-accent-red/15 text-accent-red'
                       }`}
                     role="status"
                     aria-live="polite"

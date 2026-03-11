@@ -158,15 +158,6 @@ export async function getAuthStatus(): Promise<{ authenticated: boolean; loginTi
   }
 }
 
-export async function resetPassword(recoveryToken: string, newPassword: string): Promise<{ message: string }> {
-  const res = await fetchWithTimeout(`${API_BASE}/auth/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recoveryToken, newPassword }),
-  });
-  return handleResponse(res);
-}
-
 export async function setup(password: string, sessionSecret?: string): Promise<void> {
   const res = await fetchWithTimeout(`${API_BASE}/setup`, {
     method: 'POST',
