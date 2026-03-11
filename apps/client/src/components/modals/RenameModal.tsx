@@ -62,6 +62,7 @@ export function RenameModal({ isOpen, value, onChange, onClose, onRename }: Rena
                         autoFocus
                         autoComplete="off"
                         spellCheck="false"
+                        enterKeyHint="done"
                         maxLength={255}
                         disabled={isSubmitting}
                         aria-describedby={showError ? errorId : undefined}

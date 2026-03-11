@@ -148,14 +148,23 @@ export async function logout(): Promise<void> {
   await handleResponse(res);
 }
 
-export async function getAuthStatus(): Promise<{ authenticated: boolean; loginTime: number | null; configured: boolean }> {
+export async function getAuthStatus(): Promise<{ authenticated: boolean; loginTime: number | null; configured: boolean; canReset: boolean }> {
   try {
     const res = await fetchWithTimeout(`${API_BASE}/auth/status`);
     return await handleResponse(res);
   } catch (err) {
     // Fallback for older servers or offline
-    return { authenticated: false, loginTime: null, configured: true };
+    return { authenticated: false, loginTime: null, configured: true, canReset: false };
   }
+}
+
+export async function resetPassword(recoveryToken: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetchWithTimeout(`${API_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recoveryToken, newPassword }),
+  });
+  return handleResponse(res);
 }
 
 export async function setup(password: string, sessionSecret?: string): Promise<void> {

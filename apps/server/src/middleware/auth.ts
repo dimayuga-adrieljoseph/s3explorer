@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import argon2 from 'argon2';
-import { rateLimits } from '../services/db.js';
+import crypto from 'crypto';
+import { rateLimits, clearAllSessions } from '../services/db.js';
 
 // Password validation helper (exported for setup route)
 export function validatePasswordStrength(password: string): { valid: boolean; reason?: string } {
@@ -91,6 +92,22 @@ import { preferences } from '../services/db.js';
 // Global state
 let passwordHash: string = '';
 let setupMode = false;
+let passwordSource: 'env' | 'db' | 'none' = 'none';
+let recoveryTokenHash: string | null = null;
+
+// Generate a recovery token for password reset (only for DB-stored passwords)
+function generateRecoveryToken(): void {
+  const token = crypto.randomBytes(16).toString('hex');
+  recoveryTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  console.log('');
+  console.log('='.repeat(60));
+  console.log('  PASSWORD RECOVERY TOKEN (save this somewhere safe):');
+  console.log(`  ${token}`);
+  console.log('  Use this token to reset your password if forgotten.');
+  console.log('  A new token is generated on each server restart.');
+  console.log('='.repeat(60));
+  console.log('');
+}
 
 // Initialize auth state
 export async function initializeAuth() {
@@ -100,6 +117,7 @@ export async function initializeAuth() {
     console.log('Auth: Using APP_PASSWORD from environment');
     passwordHash = await argon2.hash(envPassword);
     setupMode = false;
+    passwordSource = 'env';
     return;
   }
 
@@ -108,11 +126,14 @@ export async function initializeAuth() {
     console.log('Auth: Using stored admin password from database');
     passwordHash = dbPassword;
     setupMode = false;
+    passwordSource = 'db';
+    generateRecoveryToken();
     return;
   }
 
   console.log('Auth: No password configured - entering SETUP MODE');
   setupMode = true;
+  passwordSource = 'none';
 }
 
 // Start initialization
@@ -210,12 +231,93 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 }
 
+export function canResetPassword(): boolean {
+  return passwordSource === 'db' && recoveryTokenHash !== null;
+}
+
 export function getAuthStatus(req: Request, res: Response): void {
   res.json({
     authenticated: !!req.session?.authenticated,
     loginTime: req.session?.loginTime || null,
     configured: !setupMode, // Client needs to know if setup is required
+    canReset: canResetPassword(),
   });
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  if (!canResetPassword()) {
+    res.status(403).json({
+      error: passwordSource === 'env'
+        ? 'Password is set via APP_PASSWORD environment variable. Update the variable and restart the server.'
+        : 'Password reset is not available.',
+    });
+    return;
+  }
+
+  const ip = getClientIp(req);
+
+  // Rate limit (same as login)
+  const rateCheck = checkRateLimit(ip);
+  if (!rateCheck.allowed) {
+    res.status(429).json({
+      error: 'Too many attempts. Please try again later.',
+      retryAfter: rateCheck.retryAfter,
+    });
+    return;
+  }
+
+  const { recoveryToken, newPassword } = req.body;
+
+  if (!recoveryToken || !newPassword) {
+    recordAttempt(ip);
+    res.status(400).json({ error: 'Recovery token and new password are required' });
+    return;
+  }
+
+  // Verify recovery token using timing-safe comparison
+  try {
+    const inputHash = crypto.createHash('sha256').update(recoveryToken).digest('hex');
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(inputHash, 'hex'),
+      Buffer.from(recoveryTokenHash!, 'hex')
+    );
+
+    if (!isValid) {
+      recordAttempt(ip);
+      res.status(401).json({ error: 'Invalid recovery token' });
+      return;
+    }
+  } catch {
+    recordAttempt(ip);
+    res.status(401).json({ error: 'Invalid recovery token' });
+    return;
+  }
+
+  // Validate password strength
+  const check = validatePasswordStrength(newPassword);
+  if (!check.valid) {
+    res.status(400).json({ error: check.reason });
+    return;
+  }
+
+  try {
+    // Set new password
+    await setAdminPassword(newPassword);
+
+    // Clear all existing sessions
+    clearAllSessions();
+
+    // Generate a new recovery token (old one is now invalid)
+    generateRecoveryToken();
+
+    // Reset rate limits for this IP
+    resetAttempts(ip);
+
+    res.json({ success: true, message: 'Password reset successfully. Please log in with your new password.' });
+  } catch (err) {
+    console.error('Password reset error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
 }
 
 // Extend express-session types

@@ -64,6 +64,7 @@ export function CreateBucketModal({ isOpen, value, onChange, onClose, onCreate }
                         disabled={isSubmitting}
                         autoComplete="off"
                         spellCheck="false"
+                        enterKeyHint="done"
                         aria-describedby={showError ? errorId : hintId}
                         aria-invalid={showError ? true : undefined}
                         maxLength={63}

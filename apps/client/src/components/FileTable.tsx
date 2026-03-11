@@ -121,7 +121,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
 
             {/* Modified column */}
             <div className="w-[88px] hidden md:flex items-center justify-center text-foreground-muted text-[11px] px-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {obj.isFolder ? '—' : formatDate(obj.lastModified)}
+                {obj.isFolder ? '—' : obj.lastModified ? <time dateTime={obj.lastModified}>{formatDate(obj.lastModified)}</time> : '—'}
             </div>
 
             {/* Actions column */}
@@ -210,7 +210,7 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect,
             </td>
 
             <td className="text-foreground-muted text-[11px] hidden md:table-cell !text-center !px-2 whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {obj.isFolder ? '—' : formatDate(obj.lastModified)}
+                {obj.isFolder ? '—' : obj.lastModified ? <time dateTime={obj.lastModified}>{formatDate(obj.lastModified)}</time> : '—'}
             </td>
 
             <td className="py-1.5 sm:py-2">

@@ -485,8 +485,6 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       className="input font-mono h-10 text-sm"
                       autoComplete="off"
                       spellCheck="false"
-                      autoCorrect="off"
-                      autoCapitalize="off"
                     />
                   </div>
                   <div className="space-y-1.5">

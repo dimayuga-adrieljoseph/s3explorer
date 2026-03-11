@@ -11,17 +11,6 @@ export const API_TIMEOUTS = {
 // UI Constants
 export const UI_DELAYS = {
   SEARCH_DEBOUNCE: 150,     // Debounce delay for search inputs (ms)
-  TOAST_DURATION: 3000,     // Toast notification display time (ms)
-  COPY_FEEDBACK: 2000,      // "Copied" feedback display time (ms)
-  UPLOAD_PROGRESS_FAKE: 200, // Fake progress update interval (ms)
-  ANIMATION_STAGGER: 30,    // Stagger delay between animated items (ms)
-} as const;
-
-// File Size Constants
-export const FILE_SIZES = {
-  MAX_UPLOAD: 100 * 1024 * 1024,        // 100MB - max single upload
-  MULTIPART_THRESHOLD: 100 * 1024 * 1024, // 100MB - threshold for multipart
-  MULTIPART_CHUNK_SIZE: 5 * 1024 * 1024,  // 5MB - chunk size for multipart
 } as const;
 
 // Validation Constants
@@ -47,11 +36,3 @@ export const STORAGE_KEYS = {
   WELCOME_DISMISSED: 's3-explorer-welcome-dismissed',
 } as const;
 
-// Keyboard Shortcuts
-export const KEYBOARD_SHORTCUTS = {
-  COMMAND_PALETTE: 'k',     // Cmd/Ctrl + K
-  CONNECTIONS: ',',         // Cmd/Ctrl + ,
-  UPLOAD: 'u',              // Cmd/Ctrl + U
-  NEW_FOLDER: 'n',          // Cmd/Ctrl + Shift + N
-  REFRESH: 'r',             // Cmd/Ctrl + R (with shift to avoid browser refresh)
-} as const;

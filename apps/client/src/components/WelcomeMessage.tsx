@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { STORAGE_KEYS } from '../constants';
 
 interface WelcomeMessageProps {
   onConfigure: () => void;
@@ -11,7 +12,7 @@ export function WelcomeMessage({ onConfigure }: WelcomeMessageProps) {
 
   useEffect(() => {
     // Check if user has dismissed before
-    const hasDismissed = localStorage.getItem('s3-explorer-welcome-dismissed');
+    const hasDismissed = localStorage.getItem(STORAGE_KEYS.WELCOME_DISMISSED);
     if (hasDismissed) {
       setDismissed(true);
       return;
@@ -24,7 +25,7 @@ export function WelcomeMessage({ onConfigure }: WelcomeMessageProps) {
 
   const handleDismiss = () => {
     setVisible(false);
-    localStorage.setItem('s3-explorer-welcome-dismissed', 'true');
+    localStorage.setItem(STORAGE_KEYS.WELCOME_DISMISSED, 'true');
     setTimeout(() => setDismissed(true), 300);
   };
 

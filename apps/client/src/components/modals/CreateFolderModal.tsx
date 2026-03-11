@@ -62,6 +62,7 @@ export function CreateFolderModal({ isOpen, value, onChange, onClose, onCreate }
                         autoFocus
                         autoComplete="off"
                         spellCheck="false"
+                        enterKeyHint="done"
                         disabled={isSubmitting}
                         aria-describedby={showError ? errorId : undefined}
                         aria-invalid={showError ? true : undefined}

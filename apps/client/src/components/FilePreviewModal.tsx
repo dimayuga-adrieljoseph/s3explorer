@@ -104,7 +104,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                         <img
                             src={proxyUrl}
                             alt={fileName}
-                            loading="lazy"
+                            decoding="async"
                             className={`max-w-full max-h-full object-contain rounded ${imageLoaded ? '' : 'hidden'}`}
                             onLoad={() => setImageLoaded(true)}
                             onError={() => setError('Failed to load image')}
