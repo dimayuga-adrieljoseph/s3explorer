@@ -74,10 +74,10 @@ export function CreateFolderModal({ isOpen, value, onChange, onClose, onCreate }
                     )}
                 </div>
                 <div className="flex justify-end gap-3">
-                    <button type="button" onClick={handleClose} className="btn btn-secondary" disabled={isSubmitting}>
+                    <button type="button" onClick={handleClose} className="btn btn-secondary h-10 sm:h-auto px-4 sm:px-4 text-base sm:text-sm" disabled={isSubmitting}>
                         Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={!validation.valid || isSubmitting}>
+                    <button type="submit" className="btn btn-primary h-10 sm:h-auto px-4 sm:px-4 text-base sm:text-sm" disabled={!validation.valid || isSubmitting}>
                         {isSubmitting ? 'Creating…' : 'Create'}
                     </button>
                 </div>

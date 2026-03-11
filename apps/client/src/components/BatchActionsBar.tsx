@@ -15,8 +15,8 @@ export function BatchActionsBar({
 
     return (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-slideUp">
-            <div className="flex items-center gap-2 px-3 py-2 bg-background-secondary border border-border rounded-md shadow-lg">
-                <span className="text-sm text-foreground-secondary mr-2">
+            <div className="flex flex-nowrap items-center gap-2 px-3 py-2 bg-background-secondary border border-border rounded-md shadow-lg">
+                <span className="text-sm text-foreground-secondary mr-2 whitespace-nowrap">
                     {selectedCount} selected
                 </span>
 
@@ -35,7 +35,7 @@ export function BatchActionsBar({
 
                 <button
                     onClick={onClearSelection}
-                    className="btn btn-ghost btn-icon w-7 h-7"
+                    className="btn btn-ghost btn-icon w-8 h-8"
                     aria-label="Clear selection"
                 >
                     <X className="w-4 h-4" />

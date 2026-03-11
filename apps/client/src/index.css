@@ -774,12 +774,6 @@ textarea:focus-visible {
 
 /* Mobile-first touch targets */
 @media (max-width: 640px) {
-  /* Ensure minimum touch target sizes (44px per Apple HIG) */
-  .btn-icon {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
   /* Larger table cells for easier tapping */
   .table td {
     padding: 0.625rem 0.75rem;

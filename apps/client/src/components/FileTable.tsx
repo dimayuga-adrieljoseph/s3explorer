@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, memo } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { Download, MoreHorizontal, Check, ChevronUp, ChevronDown } from 'lucide-react';
+import { Download, MoreHorizontal, Check } from 'lucide-react';
 import type { S3Object, SortField, SortDirection } from '../types';
 import { formatBytes, formatDate } from '../utils/formatters';
 import { getFileName, getFileIcon } from '../utils/fileUtils';
@@ -55,13 +55,6 @@ function SelectCheckbox({ checked, onChange, ariaLabel }: { checked: boolean; on
     );
 }
 
-// Sort indicator arrow
-function SortIndicator({ direction }: { direction: SortDirection }) {
-    return direction === 'asc'
-        ? <ChevronUp className="w-3 h-3 text-accent-purple" />
-        : <ChevronDown className="w-3 h-3 text-accent-purple" />;
-}
-
 // Clickable sortable column header
 function SortButton({ field, label, sortField, sortDirection, onSort, className }: {
     field: SortField;
@@ -79,7 +72,6 @@ function SortButton({ field, label, sortField, sortDirection, onSort, className 
             aria-label={`Sort by ${label} ${isActive ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
         >
             {label}
-            {isActive && <SortIndicator direction={sortDirection} />}
         </button>
     );
 }
@@ -133,7 +125,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
             </div>
 
             {/* Actions column */}
-            <div className="w-[52px] sm:w-[64px] flex items-center justify-end gap-0.5 pr-2">
+            <div className="w-16 sm:w-[72px] flex items-center justify-end gap-0.5 pr-2">
                 {/* Size on mobile */}
                 {!obj.isFolder && (
                     <span className="text-[11px] text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
@@ -143,7 +135,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
                 {!obj.isFolder && (
                     <button
                         onClick={e => { e.stopPropagation(); onDownload(obj); }}
-                        className="btn btn-ghost btn-icon w-7 h-7 sm:w-8 sm:h-8"
+                        className="btn btn-ghost btn-icon w-8 h-8"
                         aria-label={`Download ${fileName}`}
                     >
                         <Download className="w-3.5 h-3.5" aria-hidden="true" />
@@ -151,7 +143,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
                 )}
                 <button
                     onClick={e => { e.stopPropagation(); onContextMenu(e, obj); }}
-                    className="btn btn-ghost btn-icon w-7 h-7 sm:w-8 sm:h-8"
+                    className="btn btn-ghost btn-icon w-8 h-8"
                     aria-label={`More options for ${fileName}`}
                     aria-haspopup="menu"
                 >
@@ -231,7 +223,7 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect,
                     {!obj.isFolder && (
                         <button
                             onClick={e => { e.stopPropagation(); onDownload(obj); }}
-                            className="btn btn-ghost btn-icon w-7 h-7 sm:w-8 sm:h-8"
+                            className="btn btn-ghost btn-icon w-8 h-8"
                             aria-label={`Download ${fileName}`}
                         >
                             <Download className="w-3.5 h-3.5" aria-hidden="true" />
@@ -239,7 +231,7 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect,
                     )}
                     <button
                         onClick={e => { e.stopPropagation(); onContextMenu(e, obj); }}
-                        className="btn btn-ghost btn-icon w-7 h-7 sm:w-8 sm:h-8"
+                        className="btn btn-ghost btn-icon w-8 h-8"
                         aria-label={`More options for ${fileName}`}
                         aria-haspopup="menu"
                     >
@@ -346,7 +338,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                     <div className="w-[88px] hidden md:flex justify-center px-2 py-2">
                         <SortButton field="lastModified" label="Modified" {...sortProps} />
                     </div>
-                    <div className="w-[52px] sm:w-[64px] py-2"><span className="sr-only">Actions</span></div>
+                    <div className="w-16 sm:w-[72px] py-2"><span className="sr-only">Actions</span></div>
                 </div>
 
                 {/* Virtualized list */}
@@ -406,7 +398,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                         <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">
                             <SortButton field="lastModified" label="Modified" {...sortProps} className="justify-center w-full" />
                         </th>
-                        <th scope="col" className="w-[52px] sm:w-[64px]"><span className="sr-only">Actions</span></th>
+                        <th scope="col" className="w-16 sm:w-[72px]"><span className="sr-only">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody>

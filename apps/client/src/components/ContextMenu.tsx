@@ -45,7 +45,7 @@ interface ContextMenuItemProps {
 
 export function ContextMenuItem({ icon: Icon, label, onClick, danger = false }: ContextMenuItemProps) {
     const colorClasses = danger
-        ? 'text-accent-red hover:bg-accent-red/10'
+        ? 'text-accent-red hover:bg-accent-red/15'
         : 'text-foreground-secondary hover:bg-background-hover hover:text-foreground';
 
     return (

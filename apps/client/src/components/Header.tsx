@@ -66,7 +66,7 @@ export function Header({
             <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-shrink-0 max-w-[45%] sm:max-w-[280px] z-10">
                 <button
                     onClick={onOpenSidebar}
-                    className="btn btn-ghost btn-icon md:hidden flex-shrink-0 w-9 h-9"
+                    className="btn btn-ghost btn-icon md:hidden flex-shrink-0 w-10 h-10 sm:w-9 sm:h-9"
                     aria-label="Open sidebar menu"
                 >
                     <Menu className="w-5 h-5" aria-hidden="true" />
@@ -75,7 +75,7 @@ export function Header({
                 {currentPath && (
                     <button
                         onClick={onGoBack}
-                        className="btn btn-ghost btn-icon flex-shrink-0 w-9 h-9"
+                        className="btn btn-ghost btn-icon flex-shrink-0 w-10 h-10 sm:w-9 sm:h-9 rounded-full"
                         aria-label="Go back to parent folder"
                     >
                         <ChevronLeft className="w-5 h-5" aria-hidden="true" />
@@ -140,19 +140,19 @@ export function Header({
             )}
 
             {/* Right Section - Actions */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10" role="toolbar" aria-label="File actions">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 z-10" role="toolbar" aria-label="File actions">
                 {selectedBucket && (
                     <>
                         <button
                             onClick={onNewFolder}
-                            className="btn btn-secondary h-8 sm:h-8 px-2 sm:px-2 rounded-full border border-border hover:border-border-hover dark:border-white/20 transition-all flex items-center gap-2"
+                            className="btn btn-secondary h-9 sm:h-8 px-2.5 sm:px-2 rounded-full border border-border hover:border-border-hover dark:border-white/20 transition-all flex items-center gap-2"
                             aria-label="Create new folder"
                         >
                             <FolderPlus className="w-5 h-5 sm:w-4 sm:h-4" aria-hidden="true" />
                             <span className="hidden md:inline text-sm font-medium">Folder</span>
                         </button>
 
-                        <label className="btn btn-primary cursor-pointer h-8 sm:h-8 px-2 sm:px-2 rounded-full border border-transparent hover:border-white/20 transition-all flex items-center gap-2 select-none" role="button" aria-label="Upload files">
+                        <label className="btn btn-primary cursor-pointer h-9 sm:h-8 px-2.5 sm:px-2 rounded-full border border-transparent hover:border-white/20 transition-all flex items-center gap-2 select-none" role="button" aria-label="Upload files">
                             <img src="/icons/upload.png" alt="" className="w-5 h-5 sm:w-4 sm:h-4 brightness-0 invert" aria-hidden="true" />
                             <span className="hidden sm:inline text-sm font-medium pointer-events-none">Upload</span>
                             <input
@@ -171,7 +171,7 @@ export function Header({
                 <button
                     onClick={handleRefresh}
                     disabled={!selectedBucket || loading}
-                    className="btn btn-ghost btn-icon w-9 h-9"
+                    className="btn btn-ghost btn-icon w-10 h-10 sm:w-9 sm:h-9"
                     aria-label={loading ? 'Refreshing...' : 'Refresh file list'}
                 >
                     <RefreshCw className={`w-5 h-5 ${isSpinning ? 'animate-spin-once' : ''}`} aria-hidden="true" />

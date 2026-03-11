@@ -188,7 +188,14 @@ export function Sidebar({
                             >
                                 <Database className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
                                 <span className="flex-1 truncate text-base sm:text-sm">{bucket.name}</span>
-                                <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity md:ml-0 ml-auto mr-1 md:mr-0">
+                                    <button
+                                        onClick={e => { e.stopPropagation(); onDeleteBucket(bucket.name); }}
+                                        className="flex items-center justify-center w-8 h-8 rounded-md text-foreground-secondary hover:text-accent-red hover:bg-transparent active:bg-transparent active:scale-95 transition-all focus-visible:ring-0 focus-visible:outline-none"
+                                        aria-label={`Delete bucket: ${bucket.name}`}
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                    </button>
                                     <button
                                         onClick={e => handleCopyBucketName(e, bucket.name)}
                                         className="flex items-center justify-center w-8 h-8 rounded-md text-foreground-secondary hover:text-accent-purple hover:bg-transparent active:bg-transparent active:scale-95 transition-all focus-visible:ring-0 focus-visible:outline-none"
@@ -199,13 +206,6 @@ export function Sidebar({
                                         ) : (
                                             <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                                         )}
-                                    </button>
-                                    <button
-                                        onClick={e => { e.stopPropagation(); onDeleteBucket(bucket.name); }}
-                                        className="flex items-center justify-center w-8 h-8 rounded-md text-foreground-secondary hover:text-accent-red hover:bg-transparent active:bg-transparent active:scale-95 transition-all focus-visible:ring-0 focus-visible:outline-none"
-                                        aria-label={`Delete bucket: ${bucket.name}`}
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                                     </button>
                                 </div>
                             </div>

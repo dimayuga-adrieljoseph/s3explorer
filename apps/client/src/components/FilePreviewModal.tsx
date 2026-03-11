@@ -104,6 +104,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                         <img
                             src={proxyUrl}
                             alt={fileName}
+                            loading="lazy"
                             className={`max-w-full max-h-full object-contain rounded ${imageLoaded ? '' : 'hidden'}`}
                             onLoad={() => setImageLoaded(true)}
                             onError={() => setError('Failed to load image')}
@@ -209,17 +210,17 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                 <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                         onClick={(e) => { e.stopPropagation(); onDownload(object); }}
-                        className="btn btn-ghost btn-icon w-9 h-9"
+                        className="btn btn-ghost btn-icon w-10 h-10 sm:w-9 sm:h-9"
                         aria-label="Download file"
                     >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                     <button
                         onClick={onClose}
-                        className="btn btn-ghost btn-icon w-9 h-9"
+                        className="btn btn-ghost btn-icon w-10 h-10 sm:w-9 sm:h-9"
                         aria-label="Close preview"
                     >
-                        <X className="w-4 h-4" />
+                        <X className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                 </div>
             </div>
