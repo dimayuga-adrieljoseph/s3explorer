@@ -35,7 +35,6 @@ export default function App() {
   // Auth state
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [canReset, setCanReset] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Connection state
@@ -105,7 +104,6 @@ export default function App() {
       const status = await api.getAuthStatus();
       setAuthenticated(status.authenticated);
       setConfigured(status.configured);
-      setCanReset(status.canReset);
       if (status.authenticated) {
         loadActiveConnection();
       }
@@ -697,7 +695,7 @@ export default function App() {
 
   // Not authenticated - show login
   if (!authenticated) {
-    return <Suspense fallback={null}><LoginPage onLogin={handleLogin} canReset={canReset} /></Suspense>;
+    return <Suspense fallback={null}><LoginPage onLogin={handleLogin} /></Suspense>;
   }
 
   // Authenticated - show app

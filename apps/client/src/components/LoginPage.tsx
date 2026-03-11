@@ -4,10 +4,9 @@ import * as api from '../api';
 
 interface LoginPageProps {
   onLogin: () => void;
-  canReset?: boolean;
 }
 
-export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
+export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -100,9 +99,7 @@ export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
             {showReset
               ? resetSuccess
                 ? 'Your password has been reset'
-                : canReset
-                  ? 'Enter your recovery token from server logs'
-                  : 'How to reset your password'
+                : 'Enter your recovery token from server logs'
               : 'Enter your password to continue'}
           </p>
         </div>
@@ -117,23 +114,6 @@ export function LoginPage({ onLogin, canReset = false }: LoginPageProps) {
                   Password reset successfully. Please log in with your new password.
                 </div>
                 <button
-                  onClick={handleBackToLogin}
-                  className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Login
-                </button>
-              </div>
-            ) : !canReset ? (
-              <div className="space-y-4">
-                <p className="text-sm text-foreground-secondary leading-relaxed">
-                  Your password is set via the <code className="text-xs bg-background-tertiary px-1.5 py-0.5 rounded font-mono">APP_PASSWORD</code> environment variable.
-                </p>
-                <p className="text-sm text-foreground-secondary leading-relaxed">
-                  To change it, update the variable and restart the server.
-                </p>
-                <button
-                  type="button"
                   onClick={handleBackToLogin}
                   className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium flex items-center justify-center gap-2"
                 >

@@ -148,13 +148,13 @@ export async function logout(): Promise<void> {
   await handleResponse(res);
 }
 
-export async function getAuthStatus(): Promise<{ authenticated: boolean; loginTime: number | null; configured: boolean; canReset: boolean }> {
+export async function getAuthStatus(): Promise<{ authenticated: boolean; loginTime: number | null; configured: boolean }> {
   try {
     const res = await fetchWithTimeout(`${API_BASE}/auth/status`);
     return await handleResponse(res);
   } catch (err) {
     // Fallback for older servers or offline
-    return { authenticated: false, loginTime: null, configured: true, canReset: false };
+    return { authenticated: false, loginTime: null, configured: true };
   }
 }
 

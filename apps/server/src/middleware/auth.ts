@@ -92,10 +92,9 @@ import { preferences } from '../services/db.js';
 // Global state
 let passwordHash: string = '';
 let setupMode = false;
-let passwordSource: 'env' | 'db' | 'none' = 'none';
 let recoveryTokenHash: string | null = null;
 
-// Generate a recovery token for password reset (only for DB-stored passwords)
+// Generate a recovery token for password reset
 function generateRecoveryToken(): void {
   const token = crypto.randomBytes(16).toString('hex');
   recoveryTokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -117,7 +116,7 @@ export async function initializeAuth() {
     console.log('Auth: Using APP_PASSWORD from environment');
     passwordHash = await argon2.hash(envPassword);
     setupMode = false;
-    passwordSource = 'env';
+    generateRecoveryToken();
     return;
   }
 
@@ -126,14 +125,12 @@ export async function initializeAuth() {
     console.log('Auth: Using stored admin password from database');
     passwordHash = dbPassword;
     setupMode = false;
-    passwordSource = 'db';
     generateRecoveryToken();
     return;
   }
 
   console.log('Auth: No password configured - entering SETUP MODE');
   setupMode = true;
-  passwordSource = 'none';
 }
 
 // Start initialization
@@ -231,26 +228,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 }
 
-export function canResetPassword(): boolean {
-  return passwordSource === 'db' && recoveryTokenHash !== null;
-}
-
 export function getAuthStatus(req: Request, res: Response): void {
   res.json({
     authenticated: !!req.session?.authenticated,
     loginTime: req.session?.loginTime || null,
-    configured: !setupMode, // Client needs to know if setup is required
-    canReset: canResetPassword(),
+    configured: !setupMode,
   });
 }
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
-  if (!canResetPassword()) {
-    res.status(403).json({
-      error: passwordSource === 'env'
-        ? 'Password is set via APP_PASSWORD environment variable. Update the variable and restart the server.'
-        : 'Password reset is not available.',
-    });
+  if (!recoveryTokenHash) {
+    res.status(403).json({ error: 'Password reset is not available' });
     return;
   }
 
@@ -279,7 +267,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     const inputHash = crypto.createHash('sha256').update(recoveryToken).digest('hex');
     const isValid = crypto.timingSafeEqual(
       Buffer.from(inputHash, 'hex'),
-      Buffer.from(recoveryTokenHash!, 'hex')
+      Buffer.from(recoveryTokenHash, 'hex')
     );
 
     if (!isValid) {
@@ -301,7 +289,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   }
 
   try {
-    // Set new password
+    // Set new password (stores in DB and updates in-memory hash)
     await setAdminPassword(newPassword);
 
     // Clear all existing sessions
