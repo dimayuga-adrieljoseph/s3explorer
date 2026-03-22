@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Local MinIO for development
   minio:
@@ -29,9 +27,9 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DATA_DIR=/data
-      # REQUIRED: Set a strong password (12+ chars, upper, lower, number, special)
+      # Strong password, or skip and configure via setup wizard on first launch
       - APP_PASSWORD=${APP_PASSWORD}
-      # REQUIRED: Set a random session secret (use: openssl rand -hex 32)
+      # Session signing key (use: openssl rand -hex 32)
       - SESSION_SECRET=${SESSION_SECRET}
     volumes:
       - app_data:/data

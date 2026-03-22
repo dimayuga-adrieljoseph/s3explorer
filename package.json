@@ -1,7 +1,7 @@
 {
-  "name": "railway-bucket-explorer",
-  "version": "1.0.0",
-  "description": "A web-based file explorer for Railway S3 buckets",
+  "name": "s3-explorer",
+  "version": "3.0.0",
+  "description": "A secure, self-hosted web-based file manager for S3-compatible storage buckets",
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",

@@ -4,7 +4,7 @@ A secure, self-hosted web-based file manager for S3-compatible storage buckets.
 
 [![Deploy on Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?style=for-the-badge&logo=railway)](https://railway.com/deploy/s3-explorer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE.md)
- <img src="https://img.shields.io/github/stars/subratomandal/s3explorer?style=for-the-badge" />
+[![GitHub Stars](https://img.shields.io/github/stars/subratomandal/s3explorer?style=for-the-badge)](https://github.com/subratomandal/s3explorer)
 
 ## Overview
 
@@ -23,19 +23,15 @@ Managing S3 buckets often requires command-line tools or provider-specific dashb
 ## Screenshots
 
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/m.png" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/m.png" alt="S3 Explorer - File manager interface" />
 </p>
 
----
-
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/s.png" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/s.png" alt="S3 Explorer - Bucket navigation" />
 </p>
 
----
-
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/c.png" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/c.png" alt="S3 Explorer - Connection manager" />
 </p>
 
 ---
@@ -82,7 +78,7 @@ flowchart TB
 
 | Feature                   | Description                                                              |
 | ------------------------- | ------------------------------------------------------------------------ |
-| **Password Auth**         | Single password via `APP_PASSWORD` env var (Argon2id hashed)             |
+| **Password Auth**         | Single password via env var or setup wizard (Argon2id hashed)            |
 | **Encrypted Credentials** | S3 credentials encrypted at rest with AES-256-GCM                        |
 | **Secure Sessions**       | Server-side SQLite sessions with httpOnly/secure/sameSite=strict cookies |
 | **Rate Limiting**         | IP-based: 10 attempts per 15 min, 30 min lockout                         |
@@ -99,7 +95,9 @@ flowchart TB
 - Create folders for organization
 - Rename files and folders
 - Delete files and folders with confirmation
-- Download files using secure presigned URLs
+- Batch select and delete multiple items
+- Download files through secure server proxy
+- In-browser file preview
 
 ### Multi-Connection Support
 
@@ -109,11 +107,12 @@ flowchart TB
 
 ### Keyboard Navigation
 
-| Shortcut           | Action                  |
-| ------------------ | ----------------------- |
-| `Cmd+K` / `Ctrl+K` | Open command palette    |
-| `Cmd+,` / `Ctrl+,` | Open connection manager |
-| `Escape`           | Close active modal      |
+| Shortcut            | Action                  |
+| ------------------- | ----------------------- |
+| `Cmd+K` / `Ctrl+K`  | Open command palette    |
+| `Cmd+,` / `Ctrl+,`  | Open connection manager |
+| `Cmd+U` / `Ctrl+U`  | Upload files            |
+| `Escape`            | Close active modal      |
 
 ---
 
@@ -121,7 +120,7 @@ flowchart TB
 
 ### Railway (Recommended)
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.com/deploy/s3-explorer)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/s3-explorer)
 
 1. Fork repo
 2. New project → Deploy from GitHub
@@ -129,6 +128,8 @@ flowchart TB
 4. Set environment variables:
    - `APP_PASSWORD` - Strong password (12+ chars, mixed case, numbers, symbols)
    - `SESSION_SECRET` - Random 32+ character string (use `openssl rand -hex 32`)
+
+   Or skip these and configure through the setup wizard on first launch.
 
 ### Docker
 
@@ -138,13 +139,12 @@ docker run -d \
   -e APP_PASSWORD='YourStr0ng!Pass#2024' \
   -e SESSION_SECRET='your-random-32-char-session-secret' \
   -v s3explorer_data:/data \
-  ghcr.io/subratomandalme/s3-explorer:latest
+  ghcr.io/subratomandal/s3-explorer:latest
 ```
 
 ### Docker Compose
 
 ```yaml
-version: "3.8"
 services:
   s3-explorer:
     build: .
@@ -152,7 +152,7 @@ services:
       - "3000:3000"
     environment:
       - APP_PASSWORD=YourStr0ng!Pass#2024
-      - SESSION_SECRET=change-this-to-random-32-chars
+      - SESSION_SECRET=change-this-to-a-random-32-char-secret
     volumes:
       - s3explorer_data:/data
 
@@ -163,19 +163,16 @@ volumes:
 ### Local Development
 
 ```bash
-# Install dependencies
-npm install
-cd apps/client && npm install
-cd ../server && npm install
+# Install all dependencies
+npm run install:all
 
 # Set environment
 export APP_PASSWORD='DevPassword123!'
 export SESSION_SECRET='dev-session-secret-32-characters!'
 export DATA_DIR='./data'
 
-# Run development servers
-cd apps/server && npm run dev  # Backend on :3000
-cd apps/client && npm run dev  # Frontend on :5173
+# Run both servers (backend on :3000, frontend on :5173)
+npm run dev
 ```
 
 ---
@@ -184,11 +181,13 @@ cd apps/client && npm run dev  # Frontend on :5173
 
 | Variable         | Required | Description                                                               |
 | ---------------- | -------- | ------------------------------------------------------------------------- |
-| `APP_PASSWORD`   | Yes      | Login password. Must be 12+ chars with upper, lower, number, special char |
-| `SESSION_SECRET` | Yes      | Session signing key. Use `openssl rand -hex 32`                           |
+| `APP_PASSWORD`   | No*      | Login password. Must be 12+ chars with upper, lower, number, special char |
+| `SESSION_SECRET` | No*      | Session signing key. Use `openssl rand -hex 32`                           |
 | `DATA_DIR`       | No       | SQLite/key storage path. Default: `/data`                                 |
 | `PORT`           | No       | Server port. Default: `3000`                                              |
 | `NODE_ENV`       | No       | Environment (`production` / `development`)                                |
+
+> \*If neither is set, a setup wizard will appear on first launch to configure both.
 
 ---
 

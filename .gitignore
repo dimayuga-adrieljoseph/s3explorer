@@ -37,5 +37,3 @@ apps/server/data/
 *.db-shm
 *.db-wal
 encryption.key
-
-# v 1.0

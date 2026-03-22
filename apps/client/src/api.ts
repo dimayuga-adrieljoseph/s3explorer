@@ -293,13 +293,6 @@ export async function listObjects(
   return { objects: data.objects, nextContinuationToken: data.nextContinuationToken, isTruncated: data.isTruncated };
 }
 
-export async function getDownloadUrl(bucket: string, key: string): Promise<string> {
-  const params = new URLSearchParams({ key });
-  const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}/download?${params}`);
-  const data = await handleResponse<{ url: string }>(res);
-  return data.url;
-}
-
 export function getProxyUrl(bucket: string, key: string): string {
   const params = new URLSearchParams({ key });
   return `${API_BASE}/objects/${encodeURIComponent(bucket)}/proxy?${params}`;

@@ -1,6 +1,6 @@
 {
   "name": "s3-explorer-server",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Secure S3 Explorer Backend",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.478.0",
-    "@aws-sdk/s3-request-presigner": "^3.478.0",
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.5.0",
     "dotenv": "^16.3.1",

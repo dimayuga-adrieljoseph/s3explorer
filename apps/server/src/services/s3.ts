@@ -15,7 +15,6 @@ import {
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
 import { connections } from './db.js';
 import { unpackAndDecrypt } from './crypto.js';
@@ -159,16 +158,6 @@ export async function listObjects(
     nextContinuationToken: response.NextContinuationToken,
     isTruncated: response.IsTruncated ?? false,
   };
-}
-
-export async function getObjectUrl(
-  bucket: string,
-  key: string,
-  expiresIn: number = 3600
-): Promise<string> {
-  const client = getS3Client();
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  return getSignedUrl(client, command, { expiresIn });
 }
 
 export async function getObjectStream(bucket: string, key: string) {

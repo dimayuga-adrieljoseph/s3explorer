@@ -68,27 +68,6 @@ router.get('/:bucket', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:bucket/download', async (req: Request, res: Response) => {
-  try {
-    const { bucket } = req.params;
-    const key = req.query.key as string;
-
-    if (!isValidBucketName(bucket)) {
-      return res.status(400).json({ error: 'Invalid bucket name' });
-    }
-    if (!key || !isValidObjectKey(key)) {
-      return res.status(400).json({ error: 'Invalid key' });
-    }
-
-    const url = await s3.getObjectUrl(bucket, key);
-    res.json({ url });
-  } catch (error: any) {
-    console.error('Error getting download URL:', error);
-    const { message, s3Code, status } = getS3ErrorDetails(error);
-    res.status(status).json({ error: message, s3Code });
-  }
-});
-
 router.get('/:bucket/proxy', async (req: Request, res: Response) => {
   try {
     const { bucket } = req.params;
