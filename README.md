@@ -14,11 +14,11 @@ Managing S3 buckets often requires command-line tools or provider-specific dashb
 
 Supported Providers:
 
-1. AWS S3
-2. Cloudflare R2
-3. MinIO
-4. DigitalOcean Spaces
-5. Any S3-compatible storage
+1. Railway Volume
+2. AWS S3
+3. Cloudflare R2
+4. MinIO
+5. DigitalOcean Spaces
 
 ### Screenshots
 
