@@ -172,6 +172,15 @@ Backend runs on :3000, frontend on :5173.
 
 ### Provider Setup Guide
 
+#### Railway Buckets
+
+1. Create a Bucket in your Railway project canvas
+2. Go to the Bucket's Credentials tab
+3. Use values:
+   1. Endpoint: Your Bucket endpoint from the Credentials tab
+   2. Access Key: Your Bucket Access Key ID
+   3. Secret Key: Your Bucket Secret Access Key
+
 #### Cloudflare R2
 
 1. Go to Cloudflare Dashboard → R2 Object Storage
