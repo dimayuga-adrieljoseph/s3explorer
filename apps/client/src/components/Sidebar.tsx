@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github, ChevronRight } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github, ChevronRight, ChevronDown, Server } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -98,14 +98,9 @@ export function Sidebar({
                     <img src="/logo.svg" alt="S3 Explorer logo" className="w-7 h-7 2xl:w-8 2xl:h-8 logo-spin logo-themed" />
                     <span className="font-semibold text-base whitespace-nowrap">S3 Explorer</span>
                 </div>
-                <div className="flex items-center">
-                    <button onClick={onToggleTheme} className="p-2 text-foreground-muted hover:text-foreground transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
-                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
-                    <button onClick={onToggleCollapse} className="p-2 text-foreground-muted hover:text-foreground transition-colors hidden md:flex items-center justify-center" aria-label="Collapse sidebar">
-                        <PanelLeftClose className="w-4 h-4" />
-                    </button>
-                </div>
+                <button onClick={onToggleCollapse} className="p-2 text-foreground-muted hover:text-foreground transition-colors hidden md:flex items-center justify-center" aria-label="Collapse sidebar">
+                    <PanelLeftClose className="w-4 h-4" />
+                </button>
             </div>
 
             {/* Search */}
@@ -167,37 +162,89 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Bottom */}
+            {/* Bottom - Settings toggle */}
             <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe">
+                {/* Settings header */}
                 <button
                     onClick={() => setSettingsOpen(p => !p)}
-                    className="w-full flex items-center gap-[10px] px-3 h-[34px] text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 h-10 text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer"
                     tabIndex={collapsed ? -1 : 0}
                     aria-expanded={settingsOpen}
                     aria-label="Settings"
                 >
+                    {settingsOpen
+                        ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
+                        : <ChevronRight className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
+                    }
                     <Settings className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 text-left">Settings</span>
-                    <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-150 ${settingsOpen ? 'rotate-90' : ''}`} />
+                    <span className="flex-1 text-left font-medium">Settings</span>
                 </button>
+
+                {/* Sub-items */}
                 {settingsOpen && (
-                    <div className="pl-[26px] space-y-px">
+                    <div className="mt-0.5 space-y-0.5">
+                        {/* Theme: Light */}
+                        <button
+                            onClick={() => { if (theme !== 'light') onToggleTheme(); }}
+                            className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-[13px] transition-colors cursor-pointer ${
+                                theme === 'light'
+                                    ? 'bg-background-hover text-foreground'
+                                    : 'text-foreground-secondary hover:text-foreground'
+                            }`}
+                            tabIndex={collapsed ? -1 : 0}
+                        >
+                            <Sun className="w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-left">Light</span>
+                            {theme === 'light' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                        </button>
+
+                        {/* Theme: Dark */}
+                        <button
+                            onClick={() => { if (theme !== 'dark') onToggleTheme(); }}
+                            className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-[13px] transition-colors cursor-pointer ${
+                                theme === 'dark'
+                                    ? 'bg-background-hover text-foreground'
+                                    : 'text-foreground-secondary hover:text-foreground'
+                            }`}
+                            tabIndex={collapsed ? -1 : 0}
+                        >
+                            <Moon className="w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-left">Dark</span>
+                            {theme === 'dark' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                        </button>
+
+                        {/* Connections */}
                         {onOpenConnections && (
-                            <button onClick={onOpenConnections} className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                            <button
+                                onClick={onOpenConnections}
+                                className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer"
+                                tabIndex={collapsed ? -1 : 0}
+                            >
+                                <Server className="w-4 h-4 flex-shrink-0" />
                                 <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                             </button>
                         )}
+
+                        {/* GitHub */}
                         <a
                             href="https://github.com/subratomandal/s3explorer"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-foreground text-[13px] transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-foreground text-[13px] transition-colors"
                             tabIndex={collapsed ? -1 : 0}
                         >
+                            <Github className="w-4 h-4 flex-shrink-0" />
                             <span>GitHub</span>
                         </a>
+
+                        {/* Logout */}
                         {onLogout && (
-                            <button onClick={onLogout} className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                            <button
+                                onClick={onLogout}
+                                className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-accent-red text-[13px] transition-colors cursor-pointer"
+                                tabIndex={collapsed ? -1 : 0}
+                            >
+                                <LogOut className="w-4 h-4 flex-shrink-0" />
                                 <span>Logout</span>
                             </button>
                         )}
