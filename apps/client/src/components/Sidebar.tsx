@@ -162,89 +162,46 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Bottom - Settings toggle */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe">
-                {/* Settings header */}
+            {/* Bottom - Settings */}
+            <div className="flex-shrink-0 border-t border-border px-3 py-1.5 pb-safe">
                 <button
                     onClick={() => setSettingsOpen(p => !p)}
-                    className="w-full flex items-center gap-2.5 px-3 h-10 text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-2 px-2 h-8 text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer"
                     tabIndex={collapsed ? -1 : 0}
                     aria-expanded={settingsOpen}
-                    aria-label="Settings"
                 >
                     {settingsOpen
-                        ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
-                        : <ChevronRight className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
+                        ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 text-foreground-muted" />
+                        : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-foreground-muted" />
                     }
-                    <Settings className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 text-left font-medium">Settings</span>
+                    <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="flex-1 text-left">Settings</span>
                 </button>
-
-                {/* Sub-items */}
                 {settingsOpen && (
-                    <div className="mt-0.5 space-y-0.5">
-                        {/* Theme: Light */}
-                        <button
-                            onClick={() => { if (theme !== 'light') onToggleTheme(); }}
-                            className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-[13px] transition-colors cursor-pointer ${
-                                theme === 'light'
-                                    ? 'bg-background-hover text-foreground'
-                                    : 'text-foreground-secondary hover:text-foreground'
-                            }`}
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Sun className="w-4 h-4 flex-shrink-0" />
+                    <div className="mt-px">
+                        <button onClick={() => { if (theme !== 'light') onToggleTheme(); }} className={`w-full flex items-center gap-2 px-2 h-8 rounded text-[13px] transition-colors cursor-pointer ${theme === 'light' ? 'bg-background-hover text-foreground' : 'text-foreground-secondary hover:text-foreground'}`} tabIndex={collapsed ? -1 : 0}>
+                            <Sun className="w-3.5 h-3.5 flex-shrink-0" />
                             <span className="flex-1 text-left">Light</span>
-                            {theme === 'light' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                            {theme === 'light' && <Check className="w-3.5 h-3.5 flex-shrink-0 text-accent-blue" />}
                         </button>
-
-                        {/* Theme: Dark */}
-                        <button
-                            onClick={() => { if (theme !== 'dark') onToggleTheme(); }}
-                            className={`w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-[13px] transition-colors cursor-pointer ${
-                                theme === 'dark'
-                                    ? 'bg-background-hover text-foreground'
-                                    : 'text-foreground-secondary hover:text-foreground'
-                            }`}
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Moon className="w-4 h-4 flex-shrink-0" />
+                        <button onClick={() => { if (theme !== 'dark') onToggleTheme(); }} className={`w-full flex items-center gap-2 px-2 h-8 rounded text-[13px] transition-colors cursor-pointer ${theme === 'dark' ? 'bg-background-hover text-foreground' : 'text-foreground-secondary hover:text-foreground'}`} tabIndex={collapsed ? -1 : 0}>
+                            <Moon className="w-3.5 h-3.5 flex-shrink-0" />
                             <span className="flex-1 text-left">Dark</span>
-                            {theme === 'dark' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                            {theme === 'dark' && <Check className="w-3.5 h-3.5 flex-shrink-0 text-accent-blue" />}
                         </button>
-
-                        {/* Connections */}
                         {onOpenConnections && (
-                            <button
-                                onClick={onOpenConnections}
-                                className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer"
-                                tabIndex={collapsed ? -1 : 0}
-                            >
-                                <Server className="w-4 h-4 flex-shrink-0" />
+                            <button onClick={onOpenConnections} className="w-full flex items-center gap-2 px-2 h-8 rounded text-foreground-secondary hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                                <Server className="w-3.5 h-3.5 flex-shrink-0" />
                                 <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                             </button>
                         )}
-
-                        {/* GitHub */}
-                        <a
-                            href="https://github.com/subratomandal/s3explorer"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-foreground text-[13px] transition-colors"
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Github className="w-4 h-4 flex-shrink-0" />
+                        <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2 px-2 h-8 rounded text-foreground-secondary hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0}>
+                            <Github className="w-3.5 h-3.5 flex-shrink-0" />
                             <span>GitHub</span>
                         </a>
-
-                        {/* Logout */}
                         {onLogout && (
-                            <button
-                                onClick={onLogout}
-                                className="w-full flex items-center gap-2.5 px-3 h-9 rounded-md text-foreground-secondary hover:text-accent-red text-[13px] transition-colors cursor-pointer"
-                                tabIndex={collapsed ? -1 : 0}
-                            >
-                                <LogOut className="w-4 h-4 flex-shrink-0" />
+                            <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 h-8 rounded text-foreground-secondary hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                                <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
                                 <span>Logout</span>
                             </button>
                         )}
