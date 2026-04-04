@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github, ChevronRight, ChevronDown, Server } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -49,7 +49,6 @@ export function Sidebar({
     onLogout,
 }: SidebarProps) {
     const [copiedBucket, setCopiedBucket] = useState<string | null>(null);
-    const [settingsOpen, setSettingsOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState(searchQuery);
 
     const debouncedSearch = useDebounce(localSearch, UI_DELAYS.SEARCH_DEBOUNCE);
@@ -98,9 +97,14 @@ export function Sidebar({
                     <img src="/logo.svg" alt="S3 Explorer logo" className="w-7 h-7 2xl:w-8 2xl:h-8 logo-spin logo-themed" />
                     <span className="font-semibold text-base whitespace-nowrap">S3 Explorer</span>
                 </div>
-                <button onClick={onToggleCollapse} className="p-2 text-foreground-muted hover:text-foreground transition-colors hidden md:flex items-center justify-center" aria-label="Collapse sidebar">
-                    <PanelLeftClose className="w-4 h-4" />
-                </button>
+                <div className="flex items-center">
+                    <button onClick={onToggleTheme} className="p-2 text-foreground-muted hover:text-foreground transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
+                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+                    <button onClick={onToggleCollapse} className="p-2 text-foreground-muted hover:text-foreground transition-colors hidden md:flex items-center justify-center" aria-label="Collapse sidebar">
+                        <PanelLeftClose className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
@@ -162,45 +166,23 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Bottom */}
-            <div className="flex-shrink-0 border-t border-border px-3 pb-safe">
+            {/* Bottom section */}
+            <div className="flex-shrink-0 border-t border-border p-3 pb-safe space-y-1">
                 {onOpenConnections && (
-                    <div className="sidebar-item h-10 !rounded-md cursor-pointer" onClick={onOpenConnections} tabIndex={collapsed ? -1 : 0}>
-                        <Server className="w-4 h-4 flex-shrink-0" />
+                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
+                        <Settings className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                         <span className="flex-1 truncate text-base sm:text-sm text-left">{activeConnectionName || 'Connections'}</span>
-                    </div>
+                    </button>
                 )}
-                <div className="sidebar-item h-10 !rounded-md cursor-pointer" onClick={() => setSettingsOpen(p => !p)} tabIndex={collapsed ? -1 : 0} role="button" aria-expanded={settingsOpen}>
-                    {settingsOpen
-                        ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
-                        : <ChevronRight className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
-                    }
-                    <Settings className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 text-base sm:text-sm text-left">Settings</span>
-                </div>
-                {settingsOpen && (
-                    <>
-                        <div className={`sidebar-item h-10 !rounded-md cursor-pointer ${theme === 'light' ? 'active' : ''}`} onClick={() => { if (theme !== 'light') onToggleTheme(); }} tabIndex={collapsed ? -1 : 0}>
-                            <Sun className="sidebar-icon w-4 h-4 flex-shrink-0" />
-                            <span className="flex-1 text-base sm:text-sm text-left">Light</span>
-                            {theme === 'light' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
-                        </div>
-                        <div className={`sidebar-item h-10 !rounded-md cursor-pointer ${theme === 'dark' ? 'active' : ''}`} onClick={() => { if (theme !== 'dark') onToggleTheme(); }} tabIndex={collapsed ? -1 : 0}>
-                            <Moon className="sidebar-icon w-4 h-4 flex-shrink-0" />
-                            <span className="flex-1 text-base sm:text-sm text-left">Dark</span>
-                            {theme === 'dark' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
-                        </div>
-                        <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item h-10 !rounded-md" tabIndex={collapsed ? -1 : 0}>
-                            <Github className="w-4 h-4 flex-shrink-0" />
-                            <span className="text-base sm:text-sm">GitHub</span>
-                        </a>
-                    </>
-                )}
+                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item w-full justify-start" tabIndex={collapsed ? -1 : 0} aria-label="GitHub repository">
+                    <Github className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                    <span className="text-base sm:text-sm">GitHub</span>
+                </a>
                 {onLogout && (
-                    <div className="sidebar-item h-10 !rounded-md cursor-pointer hover:!text-accent-red" onClick={onLogout} tabIndex={collapsed ? -1 : 0}>
-                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                    <button onClick={onLogout} className="sidebar-item w-full justify-start hover:text-accent-red" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
+                        <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                         <span className="text-base sm:text-sm">Logout</span>
-                    </div>
+                    </button>
                 )}
             </div>
         </>
