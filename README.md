@@ -14,7 +14,7 @@ Managing S3 buckets often requires command-line tools or provider-specific dashb
 
 Supported Providers:
 
-1. Railway Volume
+1. Railway Buckets
 2. AWS S3
 3. Cloudflare R2
 4. MinIO
@@ -123,11 +123,13 @@ Or skip these and configure through the setup wizard on first launch.
 
 ```bash
 docker run -d \
+  --name s3explorer \
+  --restart unless-stopped \
   -p 3000:3000 \
   -e APP_PASSWORD='YourStr0ng!Pass#2024' \
-  -e SESSION_SECRET='your-random-32-char-session-secret' \
+  -e SESSION_SECRET="$(openssl rand -hex 32)" \
   -v s3explorer_data:/data \
-  ghcr.io/subratomandal/s3-explorer:latest
+  ghcr.io/subratomandal/s3explorer:latest
 ```
 
 #### Docker Compose
@@ -135,12 +137,13 @@ docker run -d \
 ```yaml
 services:
   s3-explorer:
-    build: .
+    image: ghcr.io/subratomandal/s3explorer:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - APP_PASSWORD=YourStr0ng!Pass#2024
-      - SESSION_SECRET=change-this-to-a-random-32-char-secret
+      - SESSION_SECRET= # Generate with: openssl rand -hex 32
     volumes:
       - s3explorer_data:/data
 
@@ -148,13 +151,15 @@ volumes:
   s3explorer_data:
 ```
 
+> Set `SESSION_SECRET` to the output of `openssl rand -hex 32`. Do not use the example passwords in production.
+
 #### Local Development
 
 ```bash
 npm run install:all
 
 export APP_PASSWORD='DevPassword123!'
-export SESSION_SECRET='dev-session-secret-32-characters!'
+export SESSION_SECRET='dev-secret-not-for-production-use!!'
 export DATA_DIR='./data'
 
 npm run dev
@@ -165,7 +170,7 @@ Backend runs on :3000, frontend on :5173.
 ### Environment Variables
 
 1. `APP_PASSWORD` (optional): Login password. Must be 12+ chars with upper, lower, number, special char. If not set, a setup wizard will appear on first launch to configure it.
-2. `SESSION_SECRET` (optional): Session signing key. Use `openssl rand -hex 32`. If not set, a setup wizard will appear on first launch to configure it.
+2. `SESSION_SECRET` (optional): Session signing key. Use `openssl rand -hex 32`. If not set, a random secret is generated (sessions will be lost on server restart). Can also be configured through the setup wizard.
 3. `DATA_DIR` (optional): SQLite/key storage path. Default: `/data`
 4. `PORT` (optional): Server port. Default: `3000`
 5. `NODE_ENV` (optional): Environment (`production` / `development`)
@@ -200,6 +205,16 @@ Backend runs on :3000, frontend on :5173.
    1. Endpoint: `https://s3.<region>.amazonaws.com`
    2. Access Key: Generated Access Key ID
    3. Secret Key: Generated Secret Access Key
+
+#### DigitalOcean Spaces
+
+1. Go to DigitalOcean Dashboard → Spaces Object Storage
+2. Navigate to API → Spaces Keys
+3. Generate new key
+4. Use values:
+   1. Endpoint: `https://<region>.digitaloceanspaces.com` (e.g., `https://nyc3.digitaloceanspaces.com`)
+   2. Access Key: Generated Spaces Access Key
+   3. Secret Key: Generated Spaces Secret Key
 
 #### MinIO
 

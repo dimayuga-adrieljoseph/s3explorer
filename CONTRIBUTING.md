@@ -36,7 +36,7 @@ cd s3explorer
 npm run install:all
 
 export APP_PASSWORD='DevPassword123!'
-export SESSION_SECRET='dev-session-secret-32-characters!!'
+export SESSION_SECRET='dev-secret-not-for-production-use!!'
 export DATA_DIR='./data'
 
 npm run dev
@@ -92,4 +92,4 @@ npm run build
 
 By contributing, you agree your work is licensed under MIT
 
-<small>
+</small>

@@ -9,7 +9,7 @@ const PROVIDERS = [
   { id: 'aws', name: 'Amazon S3', defaultRegion: 'us-east-1', defaultEndpoint: '' },
   { id: 'cloudflare', name: 'Cloudflare R2', defaultRegion: 'auto', defaultEndpoint: 'https://<accountid>.r2.cloudflarestorage.com' },
   { id: 'digitalocean', name: 'DigitalOcean Spaces', defaultRegion: 'nyc3', defaultEndpoint: 'https://nyc3.digitaloceanspaces.com' },
-  { id: 'railway', name: 'Railway Volume', defaultRegion: 'us-west-1', defaultEndpoint: 'http://localhost:4444' },
+  { id: 'railway', name: 'Railway Buckets', defaultRegion: 'us-west-1', defaultEndpoint: 'http://localhost:4444' },
   { id: 'minio', name: 'MinIO (Self-hosted)', defaultRegion: 'us-east-1', defaultEndpoint: 'http://localhost:9000' },
   { id: 'custom', name: 'Custom', defaultRegion: 'us-east-1', defaultEndpoint: '' },
 ];
