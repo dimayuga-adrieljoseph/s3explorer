@@ -23,15 +23,15 @@ Supported Providers:
 ### Screenshots
 
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/m.png" alt="S3 Explorer File manager interface" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/main.png" alt="S3 Explorer File manager interface" />
 </p>
 
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/s.png" alt="S3 Explorer Bucket navigation" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/connect.png" alt="S3 Explorer Bucket navigation" />
 </p>
 
 <p>
-  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/c.png" alt="S3 Explorer Connection manager" />
+  <img src="https://raw.githubusercontent.com/subratomandal/s3explorer/main/apps/client/public/search.png" alt="S3 Explorer Connection manager" />
 </p>
 
 ### Architecture
