@@ -25,8 +25,8 @@ interface SidebarProps {
     onLogout?: () => void;
 }
 
-const EXPANDED_WIDTH = 252;
-const COLLAPSED_WIDTH = 52;
+const EXPANDED_WIDTH = 232;
+const COLLAPSED_WIDTH = 48;
 
 export function Sidebar({
     buckets,
@@ -92,10 +92,10 @@ export function Sidebar({
     const expandedContent = (
         <>
             {/* Header */}
-            <div className="h-14 flex items-center justify-between pl-4 pr-2 border-b border-border flex-shrink-0">
-                <div className="flex items-center gap-2.5 cursor-pointer group transition-all duration-300 hover:opacity-80" onClick={onNavigateHome} role="button" tabIndex={collapsed ? -1 : 0} onKeyDown={(e) => e.key === 'Enter' && onNavigateHome()}>
-                    <img src="/logo.svg" alt="S3 Explorer logo" className="w-7 h-7 2xl:w-8 2xl:h-8 logo-spin logo-themed" />
-                    <span className="font-semibold text-base whitespace-nowrap">S3 Explorer</span>
+            <div className="h-12 flex items-center justify-between pl-3.5 pr-1.5 border-b border-border flex-shrink-0">
+                <div className="flex items-center gap-2 cursor-pointer group transition-all duration-300 hover:opacity-80" onClick={onNavigateHome} role="button" tabIndex={collapsed ? -1 : 0} onKeyDown={(e) => e.key === 'Enter' && onNavigateHome()}>
+                    <img src="/logo.svg" alt="S3 Explorer logo" className="w-6 h-6 logo-spin logo-themed" />
+                    <span className="font-semibold text-sm whitespace-nowrap">S3 Explorer</span>
                 </div>
                 <div className="flex items-center">
                     <button onClick={onToggleTheme} className="p-2 text-foreground-muted hover:text-foreground transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
@@ -108,7 +108,7 @@ export function Sidebar({
             </div>
 
             {/* Search */}
-            <div className="px-3 pt-3 pb-1 flex-shrink-0">
+            <div className="px-2.5 pt-2.5 pb-1 flex-shrink-0">
                 <input
                     id="bucket-search"
                     type="search"
@@ -116,7 +116,7 @@ export function Sidebar({
                     placeholder="Search buckets…"
                     value={localSearch}
                     onChange={e => setLocalSearch(e.target.value)}
-                    className="input h-10 text-base sm:text-sm sm:h-10 !rounded-md"
+                    className="input h-8 text-[13px] !rounded-md"
                     tabIndex={collapsed ? -1 : 0}
                     aria-label="Search buckets"
                     autoComplete="off"
@@ -126,20 +126,20 @@ export function Sidebar({
             </div>
 
             {/* Buckets header */}
-            <div className="flex items-center justify-between pl-5 pr-2 py-2 flex-shrink-0">
-                <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider" id="buckets-heading">Buckets</span>
-                <button onClick={onNewBucket} className="create-bucket-btn p-2 text-foreground-secondary hover:text-foreground transition-all" tabIndex={collapsed ? -1 : 0} aria-label="Create new bucket">
-                    <Plus className="w-4 h-4" />
+            <div className="flex items-center justify-between pl-[18px] pr-1.5 py-1.5 flex-shrink-0">
+                <span className="text-[10px] font-semibold text-foreground-muted uppercase tracking-wider" id="buckets-heading">Buckets</span>
+                <button onClick={onNewBucket} className="create-bucket-btn p-1.5 text-foreground-secondary hover:text-foreground transition-all" tabIndex={collapsed ? -1 : 0} aria-label="Create new bucket">
+                    <Plus className="w-3.5 h-3.5" />
                 </button>
             </div>
 
             {/* Buckets list */}
-            <div className="flex-1 overflow-y-auto px-3 min-h-0 bucket-scrollable" role="list" aria-labelledby="buckets-heading">
-                <div className="space-y-0 sm:space-y-1">
+            <div className="flex-1 overflow-y-auto px-2.5 min-h-0 bucket-scrollable" role="list" aria-labelledby="buckets-heading">
+                <div className="space-y-px">
                     {filteredBuckets.map((bucket, i) => (
                         <div
                             key={bucket.name}
-                            className={`sidebar-item group stagger-item h-10 !rounded-md ${selectedBucket === bucket.name ? 'active' : ''}`}
+                            className={`sidebar-item group stagger-item h-8 !rounded ${selectedBucket === bucket.name ? 'active' : ''}`}
                             style={{ animationDelay: `${i * 30}ms` }}
                             onClick={() => onBucketSelect(bucket.name)}
                             onKeyDown={(e) => e.key === 'Enter' && onBucketSelect(bucket.name)}
@@ -148,14 +148,14 @@ export function Sidebar({
                             aria-selected={selectedBucket === bucket.name}
                             aria-label={`Bucket: ${bucket.name}`}
                         >
-                            <Database className="sidebar-icon w-4 h-4 flex-shrink-0" />
-                            <span className="flex-1 truncate text-base sm:text-sm">{bucket.name}</span>
-                            <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                <button onClick={e => handleCopyBucketName(e, bucket.name)} className="flex items-center justify-center w-8 h-8 rounded-md text-foreground-secondary hover:text-accent-purple active:scale-95 transition-all" tabIndex={collapsed ? -1 : 0} aria-label={`Copy: ${bucket.name}`}>
-                                    {copiedBucket === bucket.name ? <Check className="w-3.5 h-3.5 text-accent-green" /> : <Copy className="w-3.5 h-3.5" />}
+                            <Database className="sidebar-icon w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="flex-1 truncate text-[13px]">{bucket.name}</span>
+                            <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button onClick={e => handleCopyBucketName(e, bucket.name)} className="flex items-center justify-center w-6 h-6 rounded text-foreground-secondary hover:text-accent-purple active:scale-95 transition-all" tabIndex={collapsed ? -1 : 0} aria-label={`Copy: ${bucket.name}`}>
+                                    {copiedBucket === bucket.name ? <Check className="w-3 h-3 text-accent-green" /> : <Copy className="w-3 h-3" />}
                                 </button>
-                                <button onClick={e => { e.stopPropagation(); onDeleteBucket(bucket.name); }} className="flex items-center justify-center w-8 h-8 rounded-md text-foreground-secondary hover:text-accent-red active:scale-95 transition-all" tabIndex={collapsed ? -1 : 0} aria-label={`Delete: ${bucket.name}`}>
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                <button onClick={e => { e.stopPropagation(); onDeleteBucket(bucket.name); }} className="flex items-center justify-center w-6 h-6 rounded text-foreground-secondary hover:text-accent-red active:scale-95 transition-all" tabIndex={collapsed ? -1 : 0} aria-label={`Delete: ${bucket.name}`}>
+                                    <Trash2 className="w-3 h-3" />
                                 </button>
                             </div>
                         </div>
@@ -166,21 +166,21 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Bottom section — px-3 matches bucket list container, px-3 inner matches sidebar-item padding */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-1 pb-safe">
+            {/* Bottom section */}
+            <div className="flex-shrink-0 border-t border-border px-2.5 py-1.5 pb-safe">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
-                        <Settings className="w-4 h-4 flex-shrink-0" />
+                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                        <Settings className="w-3.5 h-3.5 flex-shrink-0" />
                         <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
-                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0}>
-                    <Github className="w-4 h-4 flex-shrink-0" />
+                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0}>
+                    <Github className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>GitHub</span>
                 </a>
                 {onLogout && (
-                    <button onClick={onLogout} className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
-                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                    <button onClick={onLogout} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                        <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>Logout</span>
                     </button>
                 )}
@@ -190,54 +190,47 @@ export function Sidebar({
 
     // ── Collapsed icon strip content ──
     const collapsedContent = (
-        <div className="flex flex-col items-center h-full py-2 gap-1">
-            <button onClick={onToggleCollapse} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Expand sidebar" title="Expand sidebar">
-                <PanelLeft className="w-[18px] h-[18px]" />
+        <div className="flex flex-col items-center h-full py-1.5 gap-0.5">
+            <button onClick={onToggleCollapse} className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Expand sidebar" title="Expand sidebar">
+                <PanelLeft className="w-4 h-4" />
             </button>
-            <button onClick={onNavigateHome} className="w-9 h-9 flex items-center justify-center my-1 flex-shrink-0" aria-label="Home" title="S3 Explorer">
-                <img src="/logo.svg" alt="S3 Explorer" className="w-6 h-6 logo-themed" />
+            <button onClick={onNavigateHome} className="w-8 h-8 flex items-center justify-center my-0.5 flex-shrink-0" aria-label="Home" title="S3 Explorer">
+                <img src="/logo.svg" alt="S3 Explorer" className="w-5 h-5 logo-themed" />
             </button>
-            <button onClick={onNewBucket} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Create bucket" title="Create bucket">
-                <Plus className="w-4 h-4" />
+            <button onClick={onNewBucket} className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Create bucket" title="Create bucket">
+                <Plus className="w-3.5 h-3.5" />
             </button>
-            <div className="w-6 h-px bg-border my-1 flex-shrink-0" />
-            <div className="flex-1 flex flex-col items-center gap-0.5 overflow-y-auto min-h-0 bucket-scrollable w-full px-1.5">
+            <div className="w-5 h-px bg-border my-0.5 flex-shrink-0" />
+            <div className="flex-1 flex flex-col items-center gap-px overflow-y-auto min-h-0 bucket-scrollable w-full px-1">
                 {buckets.map(bucket => (
                     <button
                         key={bucket.name}
                         onClick={() => onBucketSelect(bucket.name)}
-                        className={`w-9 h-9 flex items-center justify-center rounded transition-colors flex-shrink-0 ${
+                        className={`w-8 h-8 flex items-center justify-center rounded transition-colors flex-shrink-0 ${
                             selectedBucket === bucket.name ? 'text-accent-pink bg-accent-pink/10' : 'text-foreground-muted hover:text-foreground'
                         }`}
                         aria-label={`Bucket: ${bucket.name}`}
                         title={bucket.name}
                     >
-                        <Database className="w-4 h-4" />
+                        <Database className="w-3.5 h-3.5" />
                     </button>
                 ))}
             </div>
-            <div className="w-6 h-px bg-border my-1 flex-shrink-0" />
-            <button onClick={onToggleTheme} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <div className="w-5 h-px bg-border my-0.5 flex-shrink-0" />
+            <button onClick={onToggleTheme} className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
             {onOpenConnections && (
-                <button onClick={onOpenConnections} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Connections" title={activeConnectionName || 'Connections'}>
-                    <Settings className="w-4 h-4" />
+                <button onClick={onOpenConnections} className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="Connections" title={activeConnectionName || 'Connections'}>
+                    <Settings className="w-3.5 h-3.5" />
                 </button>
             )}
-            <a
-                href="https://github.com/subratomandal/s3explorer"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0"
-                aria-label="GitHub"
-                title="GitHub"
-            >
-                <Github className="w-4 h-4" />
+            <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0" aria-label="GitHub" title="GitHub">
+                <Github className="w-3.5 h-3.5" />
             </a>
             {onLogout && (
-                <button onClick={onLogout} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-accent-red transition-colors flex-shrink-0" aria-label="Logout" title="Logout">
-                    <LogOut className="w-4 h-4" />
+                <button onClick={onLogout} className="w-8 h-8 flex items-center justify-center text-foreground-muted hover:text-accent-red transition-colors flex-shrink-0" aria-label="Logout" title="Logout">
+                    <LogOut className="w-3.5 h-3.5" />
                 </button>
             )}
         </div>
@@ -292,7 +285,7 @@ export function Sidebar({
 
             {/* ── Mobile sidebar: fixed overlay, unaffected by collapsed state ── */}
             <aside
-                className={`md:hidden flex flex-col w-[276px] sm:w-[252px] border-r border-border bg-background-secondary fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-in-out ${
+                className={`md:hidden flex flex-col w-[260px] sm:w-[232px] border-r border-border bg-background-secondary fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-in-out ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
                 role="navigation"
