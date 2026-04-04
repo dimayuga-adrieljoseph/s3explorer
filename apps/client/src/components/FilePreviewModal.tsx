@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { X, Download } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { X, Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import type { S3Object } from '../types';
 import { getFileName, getPreviewType } from '../utils/fileUtils';
 import { getProxyUrl } from '../api';
@@ -10,83 +10,123 @@ interface FilePreviewModalProps {
     bucket: string;
     onClose: () => void;
     onDownload: (obj: S3Object) => void;
+    objects?: S3Object[];
+    startIndex?: number;
 }
 
-const MAX_TEXT_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_TEXT_SIZE = 5 * 1024 * 1024;
+const ZOOM_STEP = 0.25;
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 5;
 
-export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePreviewModalProps) {
+export function FilePreviewModal({ object, bucket, onClose, onDownload, objects, startIndex }: FilePreviewModalProps) {
     const [textContent, setTextContent] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(startIndex ?? 0);
+    const [zoom, setZoom] = useState(1);
+    const imageContainerRef = useRef<HTMLDivElement>(null);
 
-    const fileName = object ? getFileName(object.key) : '';
-    const previewType = object ? getPreviewType(object.key) : null;
-    const proxyUrl = object ? getProxyUrl(bucket, object.key) : '';
+    const isMulti = objects && objects.length > 0;
+    const activeObject = isMulti ? objects[currentIndex] : object;
+    const totalCount = isMulti ? objects.length : 0;
 
-    // Reset states when object changes
+    const fileName = activeObject ? getFileName(activeObject.key) : '';
+    const previewType = activeObject ? getPreviewType(activeObject.key) : null;
+    const proxyUrl = activeObject ? getProxyUrl(bucket, activeObject.key) : '';
+
+    useEffect(() => {
+        if (startIndex !== undefined) setCurrentIndex(startIndex);
+    }, [startIndex]);
+
+    // Reset states when active object changes
     useEffect(() => {
         setImageLoaded(false);
         setError(null);
         setTextContent(null);
         setLoading(false);
-    }, [object?.key]);
+        setZoom(1);
+    }, [activeObject?.key]);
 
     // Fetch text content
     useEffect(() => {
-        if (!object || previewType !== 'text') return;
-
-        if (object.size > MAX_TEXT_SIZE) {
-            setError(`File too large to preview (${formatBytes(object.size)}, max ${formatBytes(MAX_TEXT_SIZE)})`);
+        if (!activeObject || previewType !== 'text') return;
+        if (activeObject.size > MAX_TEXT_SIZE) {
+            setError(`File too large to preview (${formatBytes(activeObject.size)}, max ${formatBytes(MAX_TEXT_SIZE)})`);
             return;
         }
-
         setLoading(true);
         setError(null);
-
         const controller = new AbortController();
         fetch(proxyUrl, { credentials: 'include', signal: controller.signal })
-            .then(res => {
-                if (!res.ok) throw new Error('Failed to load file');
-                return res.text();
-            })
+            .then(res => { if (!res.ok) throw new Error('Failed to load file'); return res.text(); })
             .then(text => setTextContent(text))
-            .catch(err => {
-                if (err.name !== 'AbortError') {
-                    setError(err.message || 'Failed to load file');
-                }
-            })
+            .catch(err => { if (err.name !== 'AbortError') setError(err.message || 'Failed to load file'); })
             .finally(() => setLoading(false));
-
         return () => controller.abort();
-    }, [object?.key, previewType, proxyUrl, object?.size]);
+    }, [activeObject?.key, previewType, proxyUrl, activeObject?.size]);
 
-    // Handle escape key and body scroll lock
+    const goToPrev = useCallback(() => {
+        if (isMulti && currentIndex > 0) setCurrentIndex(i => i - 1);
+    }, [isMulti, currentIndex]);
+
+    const goToNext = useCallback(() => {
+        if (isMulti && currentIndex < objects.length - 1) setCurrentIndex(i => i + 1);
+    }, [isMulti, currentIndex, objects?.length]);
+
+    const zoomIn = useCallback(() => setZoom(z => Math.min(z + ZOOM_STEP, ZOOM_MAX)), []);
+    const zoomOut = useCallback(() => setZoom(z => Math.max(z - ZOOM_STEP, ZOOM_MIN)), []);
+    const zoomReset = useCallback(() => setZoom(1), []);
+
+    // Keyboard and scroll lock
     const stableOnClose = useCallback(() => onClose(), [onClose]);
     useEffect(() => {
-        if (!object) return;
-
+        if (!activeObject) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') stableOnClose();
+            if (isMulti) {
+                if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrev(); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); goToNext(); }
+            }
+            if (previewType === 'image') {
+                if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomIn(); }
+                if (e.key === '-') { e.preventDefault(); zoomOut(); }
+                if (e.key === '0') { e.preventDefault(); zoomReset(); }
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         document.body.style.overflow = 'hidden';
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = '';
-        };
-    }, [object, stableOnClose]);
+        return () => { window.removeEventListener('keydown', handleKeyDown); document.body.style.overflow = ''; };
+    }, [activeObject, stableOnClose, isMulti, goToPrev, goToNext, previewType, zoomIn, zoomOut, zoomReset]);
 
-    if (!object) return null;
+    // Mouse wheel zoom for images
+    useEffect(() => {
+        if (!activeObject || previewType !== 'image') return;
+        const container = imageContainerRef.current;
+        if (!container) return;
+        const handleWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            setZoom(z => {
+                const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+                return Math.min(Math.max(z + delta, ZOOM_MIN), ZOOM_MAX);
+            });
+        };
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, [activeObject?.key, previewType]);
+
+    if (!activeObject) return null;
+
+    const hasPrev = isMulti && currentIndex > 0;
+    const hasNext = isMulti && currentIndex < objects.length - 1;
 
     const renderPreview = () => {
         if (error) {
             return (
                 <div className="text-center p-8">
                     <p className="text-foreground-muted">{error}</p>
-                    <button onClick={() => onDownload(object)} className="btn btn-secondary mt-4">
-                        Download instead
-                    </button>
+                    <button onClick={() => onDownload(activeObject)} className="btn btn-secondary mt-4">Download instead</button>
                 </div>
             );
         }
@@ -94,9 +134,9 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
         switch (previewType) {
             case 'image':
                 return (
-                    <div className="flex items-center justify-center h-full">
+                    <div ref={imageContainerRef} className="flex items-center justify-center w-full h-full overflow-auto">
                         {!imageLoaded && (
-                            <svg className="w-6 h-6 animate-spin text-foreground-muted" viewBox="0 0 24 24" fill="none">
+                            <svg className="w-6 h-6 animate-spin text-foreground-muted absolute" viewBox="0 0 24 24" fill="none">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
@@ -105,7 +145,14 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                             src={proxyUrl}
                             alt={fileName}
                             decoding="async"
-                            className={`max-w-full max-h-full object-contain rounded ${imageLoaded ? '' : 'hidden'}`}
+                            className={`rounded transition-transform duration-150 ${imageLoaded ? '' : 'hidden'}`}
+                            style={{
+                                transform: `scale(${zoom})`,
+                                transformOrigin: 'center center',
+                                maxWidth: zoom <= 1 ? '100%' : 'none',
+                                maxHeight: zoom <= 1 ? '100%' : 'none',
+                                objectFit: 'contain',
+                            }}
                             onLoad={() => setImageLoaded(true)}
                             onError={() => setError('Failed to load image')}
                         />
@@ -114,15 +161,9 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
 
             case 'video':
                 return (
-                    <div className="flex items-center justify-center h-full">
-                        <video
-                            controls
-                            autoPlay
-                            className="max-w-full max-h-full rounded"
-                            onError={() => setError('Failed to load video')}
-                        >
+                    <div className="flex items-center justify-center w-full h-full">
+                        <video key={activeObject.key} controls autoPlay className="max-w-full max-h-full rounded" onError={() => setError('Failed to load video')}>
                             <source src={proxyUrl} />
-                            Your browser does not support video playback.
                         </video>
                     </div>
                 );
@@ -136,14 +177,8 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                             </svg>
                         </div>
                         <p className="text-sm text-foreground-secondary">{fileName}</p>
-                        <audio
-                            controls
-                            autoPlay
-                            className="w-full max-w-md"
-                            onError={() => setError('Failed to load audio')}
-                        >
+                        <audio key={activeObject.key} controls autoPlay className="w-full max-w-md" onError={() => setError('Failed to load audio')}>
                             <source src={proxyUrl} />
-                            Your browser does not support audio playback.
                         </audio>
                     </div>
                 );
@@ -161,28 +196,18 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
                 }
                 return (
                     <div className="w-full h-full overflow-auto bg-background rounded border border-border">
-                        <pre className="text-[13px] font-mono text-foreground whitespace-pre-wrap break-words p-4 leading-relaxed">
-                            {textContent}
-                        </pre>
+                        <pre className="text-[13px] font-mono text-foreground whitespace-pre-wrap break-words p-4 leading-relaxed">{textContent}</pre>
                     </div>
                 );
 
             case 'pdf':
-                return (
-                    <iframe
-                        src={proxyUrl}
-                        className="w-full h-full border-0 rounded bg-white"
-                        title={fileName}
-                    />
-                );
+                return <iframe src={proxyUrl} className="w-full h-full border-0 rounded bg-white" title={fileName} />;
 
             default:
                 return (
                     <div className="text-center p-8">
                         <p className="text-foreground-muted">Preview not available for this file type</p>
-                        <button onClick={() => onDownload(object)} className="btn btn-secondary mt-4">
-                            Download
-                        </button>
+                        <button onClick={() => onDownload(activeObject)} className="btn btn-secondary mt-4">Download</button>
                     </div>
                 );
         }
@@ -198,40 +223,95 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload }: FilePr
         >
             {/* Header */}
             <div
-                className="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-background-secondary border-b border-border flex-shrink-0"
+                className="flex items-center justify-between px-3 sm:px-4 py-2 bg-background-secondary border-b border-border flex-shrink-0"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <h3 className="text-sm font-medium truncate text-foreground">{fileName}</h3>
-                    {object.size > 0 && (
-                        <span className="text-xs text-foreground-muted flex-shrink-0">{formatBytes(object.size)}</span>
+                    {activeObject.size > 0 && (
+                        <span className="text-xs text-foreground-muted flex-shrink-0 hidden sm:inline">{formatBytes(activeObject.size)}</span>
+                    )}
+                    {isMulti && (
+                        <span className="text-xs text-foreground-muted flex-shrink-0 tabular-nums">
+                            {currentIndex + 1}/{totalCount}
+                        </span>
                     )}
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDownload(object); }}
-                        className="btn btn-ghost btn-icon w-10 h-10 sm:w-9 sm:h-9"
-                        aria-label="Download file"
-                    >
-                        <Download className="w-5 h-5 sm:w-4 sm:h-4" />
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {/* Zoom controls - images only */}
+                    {previewType === 'image' && imageLoaded && (
+                        <>
+                            <button onClick={(e) => { e.stopPropagation(); zoomOut(); }} className="btn btn-ghost btn-icon w-9 h-9 sm:w-8 sm:h-8" aria-label="Zoom out" disabled={zoom <= ZOOM_MIN}>
+                                <ZoomOut className="w-4 h-4" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); zoomReset(); }} className="btn btn-ghost btn-icon w-9 h-9 sm:w-8 sm:h-8" aria-label="Reset zoom">
+                                <Maximize className="w-4 h-4" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); zoomIn(); }} className="btn btn-ghost btn-icon w-9 h-9 sm:w-8 sm:h-8" aria-label="Zoom in" disabled={zoom >= ZOOM_MAX}>
+                                <ZoomIn className="w-4 h-4" />
+                            </button>
+                            <div className="w-px h-5 bg-border mx-0.5" />
+                        </>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); onDownload(activeObject); }} className="btn btn-ghost btn-icon w-9 h-9 sm:w-8 sm:h-8" aria-label="Download file">
+                        <Download className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={onClose}
-                        className="btn btn-ghost btn-icon w-10 h-10 sm:w-9 sm:h-9"
-                        aria-label="Close preview"
-                    >
-                        <X className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <button onClick={onClose} className="btn btn-ghost btn-icon w-9 h-9 sm:w-8 sm:h-8" aria-label="Close preview">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             </div>
 
-            {/* Content */}
+            {/* Content area with navigation arrows */}
             <div
-                className="flex-1 flex items-center justify-center p-3 sm:p-6 overflow-hidden min-h-0"
+                className="flex-1 flex items-center justify-center overflow-hidden min-h-0 relative"
                 onClick={e => e.stopPropagation()}
             >
-                {renderPreview()}
+                {/* Left arrow */}
+                {isMulti && hasPrev && (
+                    <button
+                        onClick={goToPrev}
+                        className="absolute left-1.5 sm:left-3 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-background-secondary/80 hover:bg-background-secondary border border-border text-foreground hover:scale-105 transition-all"
+                        aria-label="Previous file"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                )}
+
+                {/* Preview content */}
+                <div className={`flex-1 flex items-center justify-center h-full p-2 sm:p-6 min-w-0 ${isMulti ? 'mx-10 sm:mx-14' : ''}`}>
+                    {renderPreview()}
+                </div>
+
+                {/* Right arrow */}
+                {isMulti && hasNext && (
+                    <button
+                        onClick={goToNext}
+                        className="absolute right-1.5 sm:right-3 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-background-secondary/80 hover:bg-background-secondary border border-border text-foreground hover:scale-105 transition-all"
+                        aria-label="Next file"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                )}
             </div>
+
+            {/* Bottom bar for multi-file mode */}
+            {isMulti && (
+                <div
+                    className="flex items-center justify-center gap-4 px-3 py-2 bg-background-secondary border-t border-border flex-shrink-0"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <button onClick={goToPrev} disabled={!hasPrev} className="text-xs text-foreground-secondary hover:text-foreground disabled:opacity-30 transition-colors flex items-center gap-1">
+                        <ChevronLeft className="w-3.5 h-3.5" />Prev
+                    </button>
+                    <span className="text-xs text-foreground-muted tabular-nums">
+                        {currentIndex + 1} of {totalCount}
+                    </span>
+                    <button onClick={goToNext} disabled={!hasNext} className="text-xs text-foreground-secondary hover:text-foreground disabled:opacity-30 transition-colors flex items-center gap-1">
+                        Next<ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

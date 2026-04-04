@@ -81,6 +81,8 @@ export default function App() {
 
   // Preview state
   const [previewObject, setPreviewObject] = useState<S3Object | null>(null);
+  const [batchPreviewObjects, setBatchPreviewObjects] = useState<S3Object[]>([]);
+  const [batchPreviewStartIndex, setBatchPreviewStartIndex] = useState(0);
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.THEME);
@@ -501,7 +503,43 @@ export default function App() {
     }
   };
 
+  // Batch preview handler - opens preview for all previewable selected files
+  const handleBatchPreview = useCallback(() => {
+    if (selectedKeys.size === 0) return;
+    const previewableFiles = objects
+      .filter(obj => selectedKeys.has(obj.key) && !obj.isFolder && isPreviewable(obj.key));
+    if (previewableFiles.length === 0) return;
+    setBatchPreviewObjects(previewableFiles);
+    setBatchPreviewStartIndex(0);
+  }, [selectedKeys, objects]);
 
+  // Batch download handler - downloads all selected non-folder files
+  const handleBatchDownload = useCallback(() => {
+    if (selectedKeys.size === 0 || !selectedBucket) return;
+    const filesToDownload = objects.filter(obj => selectedKeys.has(obj.key) && !obj.isFolder);
+    if (filesToDownload.length === 0) {
+      showToastMsg('No files selected to download', 'error');
+      return;
+    }
+    // Download each file sequentially with small delays to avoid browser blocking
+    filesToDownload.forEach((obj, i) => {
+      setTimeout(() => {
+        const url = api.getProxyUrl(selectedBucket, obj.key);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = getFileName(obj.key);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 200);
+    });
+    showToastMsg(`Downloading ${filesToDownload.length} file${filesToDownload.length > 1 ? 's' : ''}`);
+  }, [selectedKeys, objects, selectedBucket]);
+
+  // Count previewable files in selection
+  const previewableSelectedCount = useMemo(() => {
+    return objects.filter(obj => selectedKeys.has(obj.key) && !obj.isFolder && isPreviewable(obj.key)).length;
+  }, [selectedKeys, objects]);
 
   const handleCreateFolder = async () => {
     if (!newName.trim() || !selectedBucket) return;
@@ -891,12 +929,25 @@ export default function App() {
           onNewBucket={() => { setNewName(''); setShowNewBucket(true); }}
         />
 
+        {/* Single file preview (from context menu) */}
         <FilePreviewModal
           object={previewObject}
           bucket={selectedBucket || ''}
           onClose={() => setPreviewObject(null)}
           onDownload={handleDownload}
         />
+
+        {/* Batch preview (from selection bar) */}
+        {batchPreviewObjects.length > 0 && (
+          <FilePreviewModal
+            object={null}
+            bucket={selectedBucket || ''}
+            onClose={() => setBatchPreviewObjects([])}
+            onDownload={handleDownload}
+            objects={batchPreviewObjects}
+            startIndex={batchPreviewStartIndex}
+          />
+        )}
 
       </Suspense>
 
@@ -929,8 +980,11 @@ export default function App() {
       {/* Batch actions bar */}
       <BatchActionsBar
         selectedCount={selectedKeys.size}
+        previewableCount={previewableSelectedCount}
         onClearSelection={clearSelection}
         onDeleteSelected={handleBatchDelete}
+        onPreviewSelected={handleBatchPreview}
+        onDownloadSelected={handleBatchDownload}
       />
     </div>
   );

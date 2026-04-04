@@ -164,7 +164,11 @@ export async function getObjectStream(bucket: string, key: string) {
   const client = getS3Client();
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const response = await client.send(command);
-  return response.Body;
+  return {
+    body: response.Body,
+    contentType: response.ContentType,
+    contentLength: response.ContentLength,
+  };
 }
 
 function chunk<T>(items: T[], size: number): T[][] {

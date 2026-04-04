@@ -80,26 +80,21 @@ router.get('/:bucket/proxy', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid key' });
     }
 
-    // Get metadata for content type
-    try {
-      const metadata = await s3.getObjectMetadata(bucket, key);
-      if (metadata.contentType) {
-        res.setHeader('Content-Type', metadata.contentType);
-      }
-      if (metadata.contentLength) {
-        res.setHeader('Content-Length', metadata.contentLength);
-      }
-    } catch (e) {
-      // Ignore metadata errors, proceed with stream
-      console.warn('Failed to get metadata for proxy:', e);
-    }
-
-    const stream = await s3.getObjectStream(bucket, key);
-    if (!stream) {
+    // Single S3 GetObject call - returns stream + headers together
+    const { body, contentType, contentLength } = await s3.getObjectStream(bucket, key);
+    if (!body) {
       return res.status(404).json({ error: 'Object not found' });
     }
+
+    if (contentType) {
+      res.setHeader('Content-Type', contentType);
+    }
+    if (contentLength) {
+      res.setHeader('Content-Length', contentLength);
+    }
+
     // Handle stream errors during transfer
-    const nodeStream = stream as import('stream').Readable;
+    const nodeStream = body as import('stream').Readable;
     nodeStream.on('error', (err: Error) => {
       console.error('Stream error during proxy:', err);
       if (!res.headersSent) {
