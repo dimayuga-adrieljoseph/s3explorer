@@ -56,6 +56,9 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
+  });
 
   // Pagination state
   const nextTokenRef = useRef<string | undefined>();
@@ -150,6 +153,10 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SIDEBAR_COLLAPSED, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -753,6 +760,8 @@ export default function App() {
         searchQuery={searchQuery}
         loading={loading}
         sidebarOpen={sidebarOpen}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         activeConnectionName={activeConnection?.name}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -773,7 +782,9 @@ export default function App() {
           selectedBucket={selectedBucket}
           currentPath={currentPath}
           loading={loading}
-          onOpenSidebar={() => setSidebarOpen(true)}
+          sidebarCollapsed={sidebarCollapsed}
+          onOpenSidebar={() => setSidebarCollapsed(false)}
+          onOpenMobileSidebar={() => setSidebarOpen(true)}
           onGoBack={handleGoBack}
           onNavigateToRoot={() => setCurrentPath('')}
           onNavigateToBreadcrumb={(i) => setCurrentPath(breadcrumbs.slice(0, i + 1).join('/') + '/')}

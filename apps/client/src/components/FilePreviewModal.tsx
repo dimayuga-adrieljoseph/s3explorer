@@ -15,9 +15,9 @@ interface FilePreviewModalProps {
 }
 
 const MAX_TEXT_SIZE = 5 * 1024 * 1024;
-const ZOOM_STEP = 0.25;
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 5;
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 10;
+const ZOOM_BUTTON_FACTOR = 1.3; // 30% per click
 
 export function FilePreviewModal({ object, bucket, onClose, onDownload, objects, startIndex }: FilePreviewModalProps) {
     const [textContent, setTextContent] = useState<string | null>(null);
@@ -75,8 +75,8 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
         if (isMulti && currentIndex < objects.length - 1) setCurrentIndex(i => i + 1);
     }, [isMulti, currentIndex, objects?.length]);
 
-    const zoomIn = useCallback(() => setZoom(z => Math.min(z + ZOOM_STEP, ZOOM_MAX)), []);
-    const zoomOut = useCallback(() => setZoom(z => Math.max(z - ZOOM_STEP, ZOOM_MIN)), []);
+    const zoomIn = useCallback(() => setZoom(z => Math.min(z * ZOOM_BUTTON_FACTOR, ZOOM_MAX)), []);
+    const zoomOut = useCallback(() => setZoom(z => Math.max(z / ZOOM_BUTTON_FACTOR, ZOOM_MIN)), []);
     const zoomReset = useCallback(() => setZoom(1), []);
 
     // Keyboard and scroll lock
@@ -100,17 +100,18 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
         return () => { window.removeEventListener('keydown', handleKeyDown); document.body.style.overflow = ''; };
     }, [activeObject, stableOnClose, isMulti, goToPrev, goToNext, previewType, zoomIn, zoomOut, zoomReset]);
 
-    // Mouse wheel zoom for images
+    // Mouse wheel zoom for images - continuous multiplicative scaling
     useEffect(() => {
         if (!activeObject || previewType !== 'image') return;
         const container = imageContainerRef.current;
         if (!container) return;
         const handleWheel = (e: WheelEvent) => {
             e.preventDefault();
-            setZoom(z => {
-                const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-                return Math.min(Math.max(z + delta, ZOOM_MIN), ZOOM_MAX);
-            });
+            // Normalize delta: trackpad gives small values, mouse wheel gives ~100-120
+            // Convert to a smooth multiplier around 1.0
+            const normalized = -e.deltaY / 300;
+            const factor = Math.pow(2, normalized); // smooth exponential: scroll up = zoom in
+            setZoom(z => Math.min(Math.max(z * factor, ZOOM_MIN), ZOOM_MAX));
         };
         container.addEventListener('wheel', handleWheel, { passive: false });
         return () => container.removeEventListener('wheel', handleWheel);
@@ -145,13 +146,14 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                             src={proxyUrl}
                             alt={fileName}
                             decoding="async"
-                            className={`rounded transition-transform duration-150 ${imageLoaded ? '' : 'hidden'}`}
+                            className={`rounded ${imageLoaded ? '' : 'hidden'}`}
                             style={{
                                 transform: `scale(${zoom})`,
                                 transformOrigin: 'center center',
                                 maxWidth: zoom <= 1 ? '100%' : 'none',
                                 maxHeight: zoom <= 1 ? '100%' : 'none',
                                 objectFit: 'contain',
+                                willChange: 'transform',
                             }}
                             onLoad={() => setImageLoaded(true)}
                             onError={() => setError('Failed to load image')}
@@ -215,7 +217,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
 
     return (
         <div
-            className="fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex flex-col bg-black/85 backdrop-blur-sm"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
@@ -271,7 +273,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                 {isMulti && hasPrev && (
                     <button
                         onClick={goToPrev}
-                        className="absolute left-1.5 sm:left-3 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-background-secondary/80 hover:bg-background-secondary border border-border text-foreground hover:scale-105 transition-all"
+                        className="preview-nav-arrow absolute left-1.5 sm:left-3 z-10"
                         aria-label="Previous file"
                     >
                         <ChevronLeft className="w-5 h-5" />
@@ -287,7 +289,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                 {isMulti && hasNext && (
                     <button
                         onClick={goToNext}
-                        className="absolute right-1.5 sm:right-3 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-background-secondary/80 hover:bg-background-secondary border border-border text-foreground hover:scale-105 transition-all"
+                        className="preview-nav-arrow absolute right-1.5 sm:right-3 z-10"
                         aria-label="Next file"
                     >
                         <ChevronRight className="w-5 h-5" />

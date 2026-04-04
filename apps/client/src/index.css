@@ -605,6 +605,49 @@ select.input option {
   }
 }
 
+/* Preview navigation arrows - pixel-perfect in both themes */
+.preview-nav-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 100ms ease, transform 100ms ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.preview-nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
+}
+
+.preview-nav-arrow:active {
+  transform: scale(0.97);
+}
+
+@media (min-width: 640px) {
+  .preview-nav-arrow {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Light theme: same dark arrows on the lightened backdrop */
+[data-theme="light"] .preview-nav-arrow {
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .preview-nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
 .context-menu {
   animation: scaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
   transform-origin: top left;
@@ -648,9 +691,9 @@ select.input option {
   min-height: 200px;
 }
 
-/* Sidebar stable layout */
+/* Sidebar stable layout - use contain only when not transitioning width */
 aside {
-  contain: layout;
+  contain: style;
 }
 
 /* Ensure header doesn't shift */

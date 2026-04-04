@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -10,6 +10,8 @@ interface SidebarProps {
     searchQuery: string;
     loading: boolean;
     sidebarOpen: boolean;
+    collapsed: boolean;
+    onToggleCollapse: () => void;
     activeConnectionName?: string;
     theme: 'dark' | 'light';
     onToggleTheme: () => void;
@@ -29,6 +31,8 @@ export function Sidebar({
     searchQuery,
     loading,
     sidebarOpen,
+    collapsed,
+    onToggleCollapse,
     activeConnectionName,
     theme,
     onToggleTheme,
@@ -105,7 +109,12 @@ export function Sidebar({
             )}
 
             <aside
-                className={`w-[276px] sm:w-[252px] flex flex-col border-r border-border bg-background-secondary flex-shrink-0 fixed md:relative inset-y-0 left-0 z-50 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+                className={`flex flex-col border-r border-border bg-background-secondary flex-shrink-0 fixed md:relative inset-y-0 left-0 z-50 transform transition-all duration-200 ease-in-out ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+                } ${
+                    collapsed ? 'md:w-0 md:border-r-0 md:overflow-hidden' : 'w-[276px] sm:w-[252px]'
+                }`}
+                style={collapsed ? { minWidth: 0 } : undefined}
                 role="navigation"
                 aria-label="Sidebar navigation"
             >
@@ -123,17 +132,27 @@ export function Sidebar({
                             S3 Explorer
                         </span>
                     </div>
-                    <button
-                        onClick={onToggleTheme}
-                        className="p-2 text-foreground-muted hover:text-foreground transition-colors"
-                        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-                    >
-                        {theme === 'dark' ? (
-                            <Sun className="w-4 h-4" aria-hidden="true" />
-                        ) : (
-                            <Moon className="w-4 h-4" aria-hidden="true" />
-                        )}
-                    </button>
+                    <div className="flex items-center">
+                        <button
+                            onClick={onToggleTheme}
+                            className="p-2 text-foreground-muted hover:text-foreground transition-colors"
+                            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                        >
+                            {theme === 'dark' ? (
+                                <Sun className="w-4 h-4" aria-hidden="true" />
+                            ) : (
+                                <Moon className="w-4 h-4" aria-hidden="true" />
+                            )}
+                        </button>
+                        {/* Collapse button - desktop only */}
+                        <button
+                            onClick={onToggleCollapse}
+                            className="p-2 text-foreground-muted hover:text-foreground transition-colors hidden md:flex items-center justify-center"
+                            aria-label="Collapse sidebar"
+                        >
+                            <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search - fixed height */}

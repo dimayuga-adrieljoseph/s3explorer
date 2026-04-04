@@ -34,5 +34,6 @@ export const PAGINATION = {
 export const STORAGE_KEYS = {
   THEME: 's3-explorer-theme',
   WELCOME_DISMISSED: 's3-explorer-welcome-dismissed',
+  SIDEBAR_COLLAPSED: 's3-explorer-sidebar-collapsed',
 } as const;
 
