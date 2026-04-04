@@ -290,7 +290,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
       {/* Delete Confirmation Overlay - Full screen */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-background-secondary border border-border rounded-xl p-6 max-w-sm w-full shadow-2xl animate-scaleIn">
+          <div className="bg-background-secondary border border-border rounded-lg p-5 max-w-sm w-full shadow-2xl animate-scaleIn">
             <h3 className="text-lg font-semibold text-foreground mb-3">Delete Connection</h3>
             <p className="text-sm text-foreground-secondary mb-6">
               This action cannot be undone.
@@ -318,7 +318,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
         <div className="relative flex flex-col">
 
           {error && (
-            <div className="mb-4 p-3 bg-accent-red/15 rounded-lg text-accent-red text-sm flex items-center gap-2 animate-fadeIn">
+            <div className="mb-4 p-3 bg-accent-red/15 rounded-md text-accent-red text-[13px] flex items-center gap-2 animate-fadeIn">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -333,7 +333,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                     Loading...
                   </div>
                 ) : connections.length === 0 ? (
-                  <div className="text-center py-6 border border-dashed border-border rounded-lg bg-background hover:border-accent-purple/30 hover:bg-accent-purple/5 transition-all cursor-pointer group" onClick={() => { resetForm(); setView('form'); }}>
+                  <div className="text-center py-6 border border-dashed border-border rounded-md bg-background hover:border-accent-purple/30 hover:bg-accent-purple/5 transition-all cursor-pointer group" onClick={() => { resetForm(); setView('form'); }}>
                     <Server className="w-8 h-8 mx-auto mb-2 text-foreground-muted group-hover:text-accent-purple transition-colors" />
                     <p className="text-foreground-secondary font-medium text-sm group-hover:text-accent-purple transition-colors">No connections</p>
                     <p className="text-foreground-muted text-xs mt-1">Click to add your first connection</p>
@@ -350,7 +350,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg transition-colors ${conn.isActive ? 'bg-accent-purple' : 'bg-transparent group-hover:bg-accent-purple/50'}`} />
 
                       <div className="flex items-center gap-3 min-w-0 pl-2 flex-1">
-                        <div className={`w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center transition-colors ${conn.isActive ? 'bg-accent-purple/20 text-accent-purple' : 'bg-background-hover text-foreground-muted group-hover:bg-accent-purple/10 group-hover:text-accent-purple'
+                        <div className={`w-9 h-9 rounded-md flex-shrink-0 flex items-center justify-center transition-colors ${conn.isActive ? 'bg-accent-purple/20 text-accent-purple' : 'bg-background-hover text-foreground-muted group-hover:bg-accent-purple/10 group-hover:text-accent-purple'
                           }`}>
                           <Server className="w-4 h-4" />
                         </div>
@@ -396,7 +396,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
               {connections.length > 0 && (
                 <button
                   onClick={() => { resetForm(); setView('form'); }}
-                  className="group w-full mt-3 py-2.5 px-4 rounded-lg border border-dashed border-border text-foreground-secondary hover:text-accent-purple hover:border-accent-purple hover:bg-accent-purple/5 transition-all flex items-center justify-center gap-2 text-sm font-medium"
+                  className="group w-full mt-3 py-2.5 px-4 rounded-md border border-dashed border-border text-foreground-secondary hover:text-accent-purple hover:border-accent-purple hover:bg-accent-purple/5 transition-all flex items-center justify-center gap-2 text-sm font-medium"
                 >
                   <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   Add Connection
@@ -536,7 +536,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                 {/* Test Result */}
                 {testResult && (
                   <div
-                    className={`p-3 rounded-lg text-sm flex items-center gap-2 border border-border ${testResult.success
+                    className={`p-3 rounded-md text-[13px] flex items-center gap-2 border border-border ${testResult.success
                       ? 'bg-accent-green/15 text-accent-green'
                       : 'bg-accent-red/15 text-accent-red'
                       }`}
@@ -557,14 +557,14 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
               <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-border">
                 <button
                   onClick={() => { setView('list'); setTestResult(null); }}
-                  className="py-2 px-3 rounded-lg bg-background-tertiary text-foreground-secondary hover:text-foreground hover:bg-background-hover border border-border transition-all text-sm font-medium"
+                  className="py-2 px-3 rounded-md bg-background-tertiary text-foreground-secondary hover:text-foreground hover:bg-background-hover border border-border transition-all text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving || !form.name || !form.endpoint}
-                  className="py-2 px-3 rounded-lg bg-accent-purple text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                  className="py-2 px-3 rounded-md bg-accent-purple text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium"
                 >
                   {saving ? 'Saving...' : 'Save'}
                 </button>

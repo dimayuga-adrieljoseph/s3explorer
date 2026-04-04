@@ -50,7 +50,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </div>
 
         {/* Card */}
-        <div className="bg-background-secondary border border-border rounded-xl p-4 sm:p-6">
+        <div className="bg-background-secondary border border-border rounded-lg p-4 sm:p-5">
           {showForgot ? (
             <div className="space-y-4">
               <p className="text-sm text-foreground-secondary leading-relaxed">
@@ -58,7 +58,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </p>
               <button
                 onClick={() => setShowForgot(false)}
-                className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium"
+                className="w-full py-3 px-4 rounded-md bg-accent-purple text-white hover:brightness-110 transition-all text-sm font-medium"
               >
                 Back to login
               </button>
@@ -113,7 +113,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </label>
 
               {error && (
-                <div id="login-error" className="p-3 rounded-lg bg-accent-red/10 border border-accent-red/20 text-accent-red text-sm flex items-center gap-2" role="alert">
+                <div id="login-error" className="p-3 rounded-md bg-accent-red/10 border border-accent-red/20 text-accent-red text-sm flex items-center gap-2" role="alert">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   {error}
                 </div>
@@ -122,7 +122,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <button
                 type="submit"
                 disabled={loading || !password}
-                className="w-full py-3 px-4 rounded-lg bg-accent-purple text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-md bg-accent-purple text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">

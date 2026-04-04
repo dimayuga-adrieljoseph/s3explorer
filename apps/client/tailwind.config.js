@@ -33,9 +33,10 @@ export default {
         mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'monospace'],
       },
       borderRadius: {
-        DEFAULT: '0.5rem',
-        lg: '0.75rem',
-        xl: '1rem',
+        DEFAULT: '0.375rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
       },
       animation: {
         'fade-in': 'fadeIn 200ms ease',

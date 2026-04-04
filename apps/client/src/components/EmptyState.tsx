@@ -12,11 +12,11 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
             role="status"
             aria-label={title}
         >
-            <div className="w-14 h-14 rounded-xl bg-background-tertiary flex items-center justify-center mb-4 empty-state-icon border border-border" aria-hidden="true">
-                <Icon className="w-7 h-7 text-foreground-muted" />
+            <div className="w-12 h-12 rounded-lg bg-background-tertiary flex items-center justify-center mb-3 empty-state-icon border border-border" aria-hidden="true">
+                <Icon className="w-6 h-6 text-foreground-muted" />
             </div>
-            <h3 className="text-base font-medium mb-1.5">{title}</h3>
-            <p className="text-sm text-foreground-muted max-w-[220px]">{description}</p>
+            <h3 className="text-sm font-medium mb-1">{title}</h3>
+            <p className="text-[13px] text-foreground-muted max-w-[220px]">{description}</p>
             {action && <div className="flex justify-center w-full">{action}</div>}
         </div>
     );

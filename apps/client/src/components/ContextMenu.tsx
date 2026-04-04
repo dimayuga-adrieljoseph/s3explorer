@@ -26,7 +26,7 @@ export function ContextMenu({ x, y, onClose, children }: ContextMenuProps) {
     return (
         <div
             ref={ref}
-            className="fixed z-50 card py-1.5 min-w-[160px] context-menu"
+            className="fixed z-50 card py-1 min-w-[150px] context-menu"
             style={{ left: adjustedX, top: adjustedY }}
             role="menu"
             aria-label="Context menu"
@@ -51,7 +51,7 @@ export function ContextMenuItem({ icon: Icon, label, onClick, danger = false }: 
     return (
         <button
             onClick={onClick}
-            className={`context-menu-item w-full flex items-center gap-3 px-3.5 py-2 text-sm ${colorClasses}`}
+            className={`context-menu-item w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] ${colorClasses}`}
             role="menuitem"
         >
             <Icon className="w-4 h-4" aria-hidden="true" />

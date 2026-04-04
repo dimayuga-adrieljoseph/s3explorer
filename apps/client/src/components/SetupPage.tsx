@@ -69,7 +69,7 @@ export function SetupPage({ onSetupComplete }: SetupPageProps) {
                 </div>
 
                 {/* Card */}
-                <div className="w-full bg-background-secondary p-6 sm:p-8 rounded-lg border border-border shadow-soft">
+                <div className="w-full bg-background-secondary p-5 sm:p-6 rounded-lg border border-border shadow-soft">
                     <form onSubmit={handleSubmit} className="space-y-6">
 
                         {/* Session Secret Section */}

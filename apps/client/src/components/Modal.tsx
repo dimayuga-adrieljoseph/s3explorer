@@ -92,11 +92,11 @@ export function Modal({ title, children, onClose, isOpen = true, size = 'md' }: 
         >
             <div
                 ref={modalRef}
-                className={`w-full ${sizeClasses[size]} modal-content bg-background-secondary border border-border sm:rounded-xl rounded-t-xl overflow-hidden shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col`}
+                className={`w-full ${sizeClasses[size]} modal-content bg-background-secondary border border-border sm:rounded-lg rounded-t-lg overflow-hidden shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col`}
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-                    <h2 id={titleId} className="text-lg sm:text-base font-semibold text-foreground">{title}</h2>
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border flex-shrink-0">
+                    <h2 id={titleId} className="text-sm font-semibold text-foreground">{title}</h2>
                     <button
                         onClick={handleClose}
                         className="btn btn-ghost btn-icon w-8 h-8 text-foreground-muted hover:text-foreground"

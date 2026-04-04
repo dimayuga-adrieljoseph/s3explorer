@@ -44,7 +44,7 @@ export function WelcomeMessage({ onConfigure }: WelcomeMessageProps) {
     >
       <div
         onClick={handleConfigure}
-        className="group bg-background-secondary border border-border rounded-xl p-4 shadow-xl cursor-pointer transition-all duration-200 hover:border-accent-purple/50 hover:bg-background-tertiary"
+        className="group bg-background-secondary border border-border rounded-lg p-3.5 shadow-xl cursor-pointer transition-all duration-200 hover:border-accent-purple/50 hover:bg-background-tertiary"
       >
         <button
           onClick={(e) => { e.stopPropagation(); handleDismiss(); }}

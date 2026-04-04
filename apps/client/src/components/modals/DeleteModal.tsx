@@ -33,7 +33,7 @@ export function DeleteModal({ object, onClose, onDelete }: DeleteModalProps) {
             onClick={onClose}
         >
             <div
-                className="bg-background-secondary border border-border rounded-xl p-6 max-w-sm w-full shadow-2xl animate-scaleIn"
+                className="bg-background-secondary border border-border rounded-lg p-5 max-w-sm w-full shadow-2xl animate-scaleIn"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}

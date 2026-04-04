@@ -212,7 +212,7 @@ export function CommandPalette({
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] p-4 command-palette-backdrop animate-fadeIn" onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-background-secondary border border-border rounded-xl shadow-2xl overflow-hidden command-palette-content"
+        className="w-full max-w-lg bg-background-secondary border border-border rounded-lg shadow-2xl overflow-hidden command-palette-content"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
@@ -251,7 +251,7 @@ export function CommandPalette({
                     <button
                       key={action.id}
                       data-index={itemIndex}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${isSelected
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-left transition-colors ${isSelected
                         ? 'bg-accent-pink/15 text-foreground'
                         : 'text-foreground-secondary hover:bg-background-hover hover:text-foreground'
                         }`}
