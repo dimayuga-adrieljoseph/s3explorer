@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github, ChevronRight } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -49,6 +49,7 @@ export function Sidebar({
     onLogout,
 }: SidebarProps) {
     const [copiedBucket, setCopiedBucket] = useState<string | null>(null);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState(searchQuery);
 
     const debouncedSearch = useDebounce(localSearch, UI_DELAYS.SEARCH_DEBOUNCE);
@@ -167,29 +168,40 @@ export function Sidebar({
             </div>
 
             {/* Bottom */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe space-y-0.5">
-                {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
-                        <Settings className="w-4 h-4 flex-shrink-0" />
-                        <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
-                    </button>
-                )}
-                <a
-                    href="https://github.com/subratomandal/s3explorer"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-foreground text-[13px] transition-colors"
+            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe">
+                <button
+                    onClick={() => setSettingsOpen(p => !p)}
+                    className="w-full flex items-center gap-[10px] px-3 h-[34px] text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer"
                     tabIndex={collapsed ? -1 : 0}
-                    aria-label="GitHub repository (opens in new tab)"
+                    aria-expanded={settingsOpen}
+                    aria-label="Settings"
                 >
-                    <Github className="w-4 h-4 flex-shrink-0" />
-                    <span>GitHub</span>
-                </a>
-                {onLogout && (
-                    <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-accent-red text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
-                        <LogOut className="w-4 h-4 flex-shrink-0" />
-                        <span>Logout</span>
-                    </button>
+                    <Settings className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1 text-left">Settings</span>
+                    <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-150 ${settingsOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {settingsOpen && (
+                    <div className="pl-[26px] space-y-px">
+                        {onOpenConnections && (
+                            <button onClick={onOpenConnections} className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                                <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
+                            </button>
+                        )}
+                        <a
+                            href="https://github.com/subratomandal/s3explorer"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-foreground text-[13px] transition-colors"
+                            tabIndex={collapsed ? -1 : 0}
+                        >
+                            <span>GitHub</span>
+                        </a>
+                        {onLogout && (
+                            <button onClick={onLogout} className="w-full flex items-center gap-[10px] px-3 h-[32px] text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                                <span>Logout</span>
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
         </>
