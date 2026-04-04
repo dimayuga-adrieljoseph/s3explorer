@@ -163,82 +163,44 @@ export function Sidebar({
             </div>
 
             {/* Bottom */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe">
-                {/* Connections - above settings */}
+            <div className="flex-shrink-0 border-t border-border px-3 pb-safe">
                 {onOpenConnections && (
-                    <button
-                        onClick={onOpenConnections}
-                        className="w-full flex items-center gap-[10px] px-3 h-10 rounded-md text-foreground-secondary hover:text-foreground text-sm transition-colors cursor-pointer"
-                        tabIndex={collapsed ? -1 : 0}
-                    >
-                        <Server className="w-[18px] h-[18px] flex-shrink-0" />
-                        <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
-                    </button>
-                )}
-
-                {/* Settings toggle */}
-                <button
-                    onClick={() => setSettingsOpen(p => !p)}
-                    className="w-full flex items-center gap-[10px] px-3 h-10 text-foreground-secondary hover:text-foreground text-sm transition-colors cursor-pointer"
-                    tabIndex={collapsed ? -1 : 0}
-                    aria-expanded={settingsOpen}
-                >
-                    {settingsOpen
-                        ? <ChevronDown className="w-[18px] h-[18px] flex-shrink-0 text-foreground-muted" />
-                        : <ChevronRight className="w-[18px] h-[18px] flex-shrink-0 text-foreground-muted" />
-                    }
-                    <Settings className="w-[18px] h-[18px] flex-shrink-0" />
-                    <span className="flex-1 text-left">Settings</span>
-                </button>
-
-                {/* Settings sub-items */}
-                {settingsOpen && (
-                    <div className="py-0.5">
-                        <button
-                            onClick={() => { if (theme !== 'light') onToggleTheme(); }}
-                            className={`w-full flex items-center gap-[10px] px-3 h-10 rounded-md text-sm transition-colors cursor-pointer ${
-                                theme === 'light' ? 'bg-background-hover text-foreground' : 'text-foreground-secondary hover:text-foreground'
-                            }`}
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Sun className="w-[18px] h-[18px] flex-shrink-0" />
-                            <span className="flex-1 text-left">Light</span>
-                            {theme === 'light' && <Check className="w-[18px] h-[18px] flex-shrink-0 text-accent-blue" />}
-                        </button>
-                        <button
-                            onClick={() => { if (theme !== 'dark') onToggleTheme(); }}
-                            className={`w-full flex items-center gap-[10px] px-3 h-10 rounded-md text-sm transition-colors cursor-pointer ${
-                                theme === 'dark' ? 'bg-background-hover text-foreground' : 'text-foreground-secondary hover:text-foreground'
-                            }`}
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Moon className="w-[18px] h-[18px] flex-shrink-0" />
-                            <span className="flex-1 text-left">Dark</span>
-                            {theme === 'dark' && <Check className="w-[18px] h-[18px] flex-shrink-0 text-accent-blue" />}
-                        </button>
-                        <a
-                            href="https://github.com/subratomandal/s3explorer"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full flex items-center gap-[10px] px-3 h-10 rounded-md text-foreground-secondary hover:text-foreground text-sm transition-colors"
-                            tabIndex={collapsed ? -1 : 0}
-                        >
-                            <Github className="w-[18px] h-[18px] flex-shrink-0" />
-                            <span>GitHub</span>
-                        </a>
+                    <div className="sidebar-item h-10 !rounded-md cursor-pointer" onClick={onOpenConnections} tabIndex={collapsed ? -1 : 0}>
+                        <Server className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1 truncate text-base sm:text-sm text-left">{activeConnectionName || 'Connections'}</span>
                     </div>
                 )}
-
-                {/* Logout - below settings, outside dropdown */}
+                <div className="sidebar-item h-10 !rounded-md cursor-pointer" onClick={() => setSettingsOpen(p => !p)} tabIndex={collapsed ? -1 : 0} role="button" aria-expanded={settingsOpen}>
+                    {settingsOpen
+                        ? <ChevronDown className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
+                        : <ChevronRight className="w-4 h-4 flex-shrink-0 text-foreground-muted" />
+                    }
+                    <Settings className="w-4 h-4 flex-shrink-0" />
+                    <span className="flex-1 text-base sm:text-sm text-left">Settings</span>
+                </div>
+                {settingsOpen && (
+                    <>
+                        <div className={`sidebar-item h-10 !rounded-md cursor-pointer ${theme === 'light' ? 'active' : ''}`} onClick={() => { if (theme !== 'light') onToggleTheme(); }} tabIndex={collapsed ? -1 : 0}>
+                            <Sun className="sidebar-icon w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-base sm:text-sm text-left">Light</span>
+                            {theme === 'light' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                        </div>
+                        <div className={`sidebar-item h-10 !rounded-md cursor-pointer ${theme === 'dark' ? 'active' : ''}`} onClick={() => { if (theme !== 'dark') onToggleTheme(); }} tabIndex={collapsed ? -1 : 0}>
+                            <Moon className="sidebar-icon w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-base sm:text-sm text-left">Dark</span>
+                            {theme === 'dark' && <Check className="w-4 h-4 flex-shrink-0 text-accent-blue" />}
+                        </div>
+                        <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item h-10 !rounded-md" tabIndex={collapsed ? -1 : 0}>
+                            <Github className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-base sm:text-sm">GitHub</span>
+                        </a>
+                    </>
+                )}
                 {onLogout && (
-                    <button
-                        onClick={onLogout}
-                        className="w-full flex items-center gap-[10px] px-3 h-10 rounded-md text-foreground-secondary hover:text-accent-red text-sm transition-colors cursor-pointer"
-                        tabIndex={collapsed ? -1 : 0}
-                    >
-                        <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
-                        <span>Logout</span>
-                    </button>
+                    <div className="sidebar-item h-10 !rounded-md cursor-pointer hover:!text-accent-red" onClick={onLogout} tabIndex={collapsed ? -1 : 0}>
+                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-base sm:text-sm">Logout</span>
+                    </div>
                 )}
             </div>
         </>
