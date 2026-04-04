@@ -79,6 +79,10 @@ export default function App() {
   // Selection state for batch operations
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
+  // Search state — when a bucket is selected, search finds files inside it
+  const [searchResults, setSearchResults] = useState<S3Object[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
   // Sort state
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -239,6 +243,22 @@ export default function App() {
   useEffect(() => {
     if (selectedBucket && authenticated) loadObjects();
   }, [selectedBucket, currentPath, authenticated, loadObjects]);
+
+  // When search query changes with a bucket selected, search inside that bucket.
+  // Clears results when query is emptied so the normal folder view returns.
+  useEffect(() => {
+    if (!selectedBucket || !searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      setSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    api.searchObjects(selectedBucket, searchQuery.trim())
+      .then(results => { if (!cancelled) { setSearchResults(results); setSearching(false); } })
+      .catch(err => { if (!cancelled && err.code !== 'CANCELLED') { setSearchResults(null); setSearching(false); } });
+    return () => { cancelled = true; };
+  }, [selectedBucket, searchQuery]);
 
   useEffect(() => {
     navigationStateRef.current = { bucket: selectedBucket, path: currentPath };
@@ -701,10 +721,11 @@ export default function App() {
 
   const breadcrumbs = useMemo(() => currentPath.split('/').filter(Boolean), [currentPath]);
 
-  // Sorted objects for display
+  // When search is active, show search results instead of the current folder
+  const sourceObjects = searchResults ?? objects;
+
   const displayObjects = useMemo(() => {
-    return [...objects].sort((a, b) => {
-      // Folders always first
+    return [...sourceObjects].sort((a, b) => {
       if (a.isFolder && !b.isFolder) return -1;
       if (!a.isFolder && b.isFolder) return 1;
 
@@ -724,7 +745,7 @@ export default function App() {
           return 0;
       }
     });
-  }, [objects, sortField, sortDirection]);
+  }, [sourceObjects, sortField, sortDirection]);
 
   // Ref mirrors the latest displayObjects so event callbacks (like handleSelectAll)
   // always see current data without needing displayObjects in their dependency arrays,
@@ -782,11 +803,11 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onSearchChange={setSearchQuery}
-        onBucketSelect={(name) => { setSelectedBucket(name); setCurrentPath(''); setSidebarOpen(false); }}
+        onBucketSelect={(name) => { setSelectedBucket(name); setCurrentPath(''); setSidebarOpen(false); setSearchQuery(''); }}
         onNewBucket={() => { setNewName(''); setShowNewBucket(true); }}
         onDeleteBucket={(name) => setShowDeleteBucket(name)}
         onCloseSidebar={() => setSidebarOpen(false)}
-        onNavigateHome={() => { setSelectedBucket(null); setCurrentPath(''); setSidebarOpen(false); }}
+        onNavigateHome={() => { setSelectedBucket(null); setCurrentPath(''); setSidebarOpen(false); setSearchQuery(''); }}
         onOpenConnections={() => setShowConnectionManager(true)}
         onLogout={handleLogout}
       />
@@ -829,6 +850,10 @@ export default function App() {
             />
           ) : !selectedBucket ? (
             <EmptyState icon={Database} title="No bucket selected" description="Select a bucket from the sidebar" />
+          ) : searching ? (
+            <EmptyState icon={Database} title="Searching..." description="" />
+          ) : searchResults && displayObjects.length === 0 ? (
+            <EmptyState icon={Folder} title="No results" description="No files or folders match your search" />
           ) : displayObjects.length === 0 && !loading ? (
             <EmptyState icon={Folder} title="Empty folder" description="Drop files here to upload" />
           ) : (
@@ -943,7 +968,7 @@ export default function App() {
           selectedBucket={selectedBucket}
           currentPath={currentPath}
           onClose={() => setShowCommandPalette(false)}
-          onSelectBucket={(name) => { setSelectedBucket(name); setCurrentPath(''); }}
+          onSelectBucket={(name) => { setSelectedBucket(name); setCurrentPath(''); setSearchQuery(''); }}
           onNavigateToRoot={() => setCurrentPath('')}
           onGoBack={handleGoBack}
           onRefresh={() => loadObjects()}

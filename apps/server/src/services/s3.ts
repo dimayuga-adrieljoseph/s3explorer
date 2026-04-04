@@ -472,6 +472,54 @@ export async function createFolder(bucket: string, path: string): Promise<void> 
   await client.send(command);
 }
 
+// Recursive search across all objects in a bucket. S3 has no native substring
+// search, so we list everything without a delimiter and match filenames manually.
+// Capped at maxResults matches or maxScanned total objects to avoid runaway requests.
+export async function searchObjects(
+  bucket: string,
+  query: string,
+  maxResults: number = 50,
+  maxScanned: number = 10000
+): Promise<ObjectInfo[]> {
+  const client = getS3Client();
+  const lowerQuery = query.toLowerCase();
+  const results: ObjectInfo[] = [];
+  let scanned = 0;
+  let continuationToken: string | undefined;
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: bucket,
+      // No Delimiter — list recursively across all "folders"
+      ...(continuationToken && { ContinuationToken: continuationToken }),
+      MaxKeys: 1000,
+    });
+    const response = await client.send(command);
+
+    for (const obj of response.Contents || []) {
+      scanned++;
+      const key = obj.Key || '';
+      if (!key) continue;
+
+      // Match on the filename part (last segment), not the full path
+      const name = key.split('/').filter(Boolean).pop() || '';
+      if (name.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          key,
+          size: obj.Size || 0,
+          lastModified: obj.LastModified,
+          isFolder: key.endsWith('/'),
+        });
+        if (results.length >= maxResults) break;
+      }
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken && results.length < maxResults && scanned < maxScanned);
+
+  return results;
+}
+
 export async function getObjectMetadata(bucket: string, key: string): Promise<ObjectMetadata> {
   const client = getS3Client();
   const command = new HeadObjectCommand({ Bucket: bucket, Key: key });

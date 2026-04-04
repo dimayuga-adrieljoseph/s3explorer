@@ -298,6 +298,19 @@ export async function listObjects(
   return { objects: data.objects, nextContinuationToken: data.nextContinuationToken, isTruncated: data.isTruncated };
 }
 
+export async function searchObjects(
+  bucket: string,
+  query: string
+): Promise<S3Object[]> {
+  const params = new URLSearchParams({ q: query });
+  const res = await fetchWithTimeout(`${API_BASE}/objects/${encodeURIComponent(bucket)}/search?${params}`, {
+    requestKey: 'searchObjects',
+    timeout: API_TIMEOUTS.DEFAULT,
+  });
+  const data = await handleResponse<{ results: S3Object[] }>(res);
+  return data.results;
+}
+
 export function getProxyUrl(bucket: string, key: string): string {
   const params = new URLSearchParams({ key });
   return `${API_BASE}/objects/${encodeURIComponent(bucket)}/proxy?${params}`;

@@ -115,7 +115,7 @@ export function Sidebar({
                     id="bucket-search"
                     type="search"
                     name="bucket-search"
-                    placeholder="Search buckets…"
+                    placeholder={selectedBucket ? "Search files…" : "Search buckets…"}
                     value={localSearch}
                     onChange={e => setLocalSearch(e.target.value)}
                     className="input h-8 text-xs !rounded-md"
