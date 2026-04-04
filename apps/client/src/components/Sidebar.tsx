@@ -167,20 +167,20 @@ export function Sidebar({
             </div>
 
             {/* Bottom section */}
-            <div className="flex-shrink-0 border-t border-border p-3 pb-safe space-y-1">
+            <div className="flex-shrink-0 border-t border-border px-3 py-1 pb-safe space-y-0 sm:space-y-1">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
-                        <Settings className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start h-10 !rounded-md" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
+                        <Settings className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
                         <span className="flex-1 truncate text-base sm:text-sm text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
-                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item w-full justify-start" tabIndex={collapsed ? -1 : 0} aria-label="GitHub repository">
-                    <Github className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item w-full justify-start h-10 !rounded-md" tabIndex={collapsed ? -1 : 0} aria-label="GitHub repository">
+                    <Github className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
                     <span className="text-base sm:text-sm">GitHub</span>
                 </a>
                 {onLogout && (
-                    <button onClick={onLogout} className="sidebar-item w-full justify-start hover:text-accent-red" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
-                        <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                    <button onClick={onLogout} className="sidebar-item w-full justify-start h-10 !rounded-md hover:text-accent-red" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
+                        <LogOut className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
                         <span className="text-base sm:text-sm">Logout</span>
                     </button>
                 )}
