@@ -782,9 +782,7 @@ export default function App() {
           selectedBucket={selectedBucket}
           currentPath={currentPath}
           loading={loading}
-          sidebarCollapsed={sidebarCollapsed}
-          onOpenSidebar={() => setSidebarCollapsed(false)}
-          onOpenMobileSidebar={() => setSidebarOpen(true)}
+          onOpenSidebar={() => setSidebarOpen(true)}
           onGoBack={handleGoBack}
           onNavigateToRoot={() => setCurrentPath('')}
           onNavigateToBreadcrumb={(i) => setCurrentPath(breadcrumbs.slice(0, i + 1).join('/') + '/')}

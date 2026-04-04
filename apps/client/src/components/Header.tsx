@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, RefreshCw, Menu, Search, FolderPlus, PanelLeft } from 'lucide-react';
+import { ChevronLeft, RefreshCw, Menu, Search, FolderPlus } from 'lucide-react';
 
 interface HeaderProps {
     selectedBucket: string | null;
     currentPath: string;
     loading: boolean;
-    sidebarCollapsed?: boolean;
     onOpenSidebar: () => void;
-    onOpenMobileSidebar: () => void;
     onGoBack: () => void;
     onNavigateToRoot: () => void;
     onNavigateToBreadcrumb: (index: number) => void;
@@ -21,9 +19,7 @@ export function Header({
     selectedBucket,
     currentPath,
     loading,
-    sidebarCollapsed,
     onOpenSidebar,
-    onOpenMobileSidebar,
     onGoBack,
     onNavigateToRoot,
     onNavigateToBreadcrumb,
@@ -68,25 +64,13 @@ export function Header({
         <header className="h-14 flex items-center justify-between px-2 sm:pl-4 sm:pr-2 border-b border-border bg-background-secondary/50 flex-shrink-0 relative" role="banner">
             {/* Left Section - Navigation */}
             <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-shrink-0 max-w-[45%] sm:max-w-[280px] z-10">
-                {/* Mobile hamburger - always visible on mobile */}
                 <button
-                    onClick={onOpenMobileSidebar}
+                    onClick={onOpenSidebar}
                     className="btn btn-ghost btn-icon md:hidden flex-shrink-0 w-10 h-10 sm:w-9 sm:h-9"
                     aria-label="Open sidebar menu"
                 >
                     <Menu className="w-5 h-5" aria-hidden="true" />
                 </button>
-
-                {/* Desktop expand button - only when sidebar is collapsed */}
-                {sidebarCollapsed && (
-                    <button
-                        onClick={onOpenSidebar}
-                        className="btn btn-ghost btn-icon hidden md:flex flex-shrink-0 w-9 h-9"
-                        aria-label="Expand sidebar"
-                    >
-                        <PanelLeft className="w-5 h-5" aria-hidden="true" />
-                    </button>
-                )}
 
                 {currentPath && (
                     <button

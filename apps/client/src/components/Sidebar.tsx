@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -48,24 +48,20 @@ export function Sidebar({
     const [copiedBucket, setCopiedBucket] = useState<string | null>(null);
     const [localSearch, setLocalSearch] = useState(searchQuery);
 
-    // Debounce the search input for performance
     const debouncedSearch = useDebounce(localSearch, UI_DELAYS.SEARCH_DEBOUNCE);
 
-    // Sync debounced value back to parent
     useEffect(() => {
         if (debouncedSearch !== searchQuery) {
             onSearchChange(debouncedSearch);
         }
     }, [debouncedSearch, searchQuery, onSearchChange]);
 
-    // Sync external changes to local state
     useEffect(() => {
         if (searchQuery !== localSearch && searchQuery !== debouncedSearch) {
             setLocalSearch(searchQuery);
         }
     }, [searchQuery]);
 
-    // Memoize filtered buckets to avoid recalculation on every render
     const filteredBuckets = useMemo(() =>
         buckets.filter(b =>
             !debouncedSearch.trim() || b.name.toLowerCase().includes(debouncedSearch.toLowerCase())
@@ -73,7 +69,6 @@ export function Sidebar({
         [buckets, debouncedSearch]
     );
 
-    // Memoize callback to prevent unnecessary re-renders
     const handleCopyBucketName = useCallback(async (e: React.MouseEvent, bucketName: string) => {
         e.stopPropagation();
         try {
@@ -81,7 +76,6 @@ export function Sidebar({
             setCopiedBucket(bucketName);
             setTimeout(() => setCopiedBucket(null), 2000);
         } catch {
-            // Fallback for non-HTTPS or denied permission
             try {
                 const textArea = document.createElement('textarea');
                 textArea.value = bucketName;
@@ -94,11 +88,111 @@ export function Sidebar({
                 setCopiedBucket(bucketName);
                 setTimeout(() => setCopiedBucket(null), 2000);
             } catch {
-                // Silently fail if even fallback doesn't work
+                // Silently fail
             }
         }
     }, []);
 
+    // ── Collapsed icon-only sidebar (desktop only) ──
+    if (collapsed) {
+        return (
+            <aside
+                className="hidden md:flex flex-col items-center w-[52px] border-r border-border bg-background-secondary flex-shrink-0 py-2 gap-1"
+                role="navigation"
+                aria-label="Sidebar navigation (collapsed)"
+            >
+                {/* Expand button */}
+                <button
+                    onClick={onToggleCollapse}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-hover transition-colors"
+                    aria-label="Expand sidebar"
+                    title="Expand sidebar"
+                >
+                    <PanelLeft className="w-[18px] h-[18px]" />
+                </button>
+
+                {/* Logo */}
+                <button
+                    onClick={onNavigateHome}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background-hover transition-colors my-1"
+                    aria-label="Home"
+                    title="S3 Explorer"
+                >
+                    <img src="/logo.svg" alt="S3 Explorer" className="w-6 h-6 logo-themed" />
+                </button>
+
+                {/* New bucket */}
+                <button
+                    onClick={onNewBucket}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-hover transition-colors"
+                    aria-label="Create bucket"
+                    title="Create bucket"
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+
+                <div className="w-6 h-px bg-border my-1" />
+
+                {/* Bucket icons */}
+                <div className="flex-1 flex flex-col items-center gap-0.5 overflow-y-auto min-h-0 bucket-scrollable w-full px-1.5">
+                    {buckets.map(bucket => (
+                        <button
+                            key={bucket.name}
+                            onClick={() => onBucketSelect(bucket.name)}
+                            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors flex-shrink-0 ${
+                                selectedBucket === bucket.name
+                                    ? 'bg-background text-accent-pink border border-border'
+                                    : 'text-foreground-muted hover:text-foreground hover:bg-background-hover'
+                            }`}
+                            aria-label={`Bucket: ${bucket.name}`}
+                            title={bucket.name}
+                        >
+                            <Database className="w-4 h-4" />
+                        </button>
+                    ))}
+                </div>
+
+                {/* Bottom actions */}
+                <div className="w-6 h-px bg-border my-1" />
+
+                {/* Theme toggle */}
+                <button
+                    onClick={onToggleTheme}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-hover transition-colors"
+                    aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                    title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                >
+                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+
+                {/* Connections */}
+                {onOpenConnections && (
+                    <button
+                        onClick={onOpenConnections}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-hover transition-colors"
+                        aria-label="Connections"
+                        title={activeConnectionName || 'Connections'}
+                    >
+                        <Settings className="w-4 h-4" />
+                    </button>
+                )}
+
+                {/* Logout */}
+                {onLogout && (
+                    <button
+                        onClick={onLogout}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg text-foreground-muted hover:text-accent-red hover:bg-background-hover transition-colors"
+                        aria-label="Logout"
+                        title="Logout"
+                    >
+                        <LogOut className="w-4 h-4" />
+                    </button>
+                )}
+            </aside>
+        );
+    }
+
+    // ── Expanded sidebar ��─
     return (
         <>
             {sidebarOpen && (
@@ -109,19 +203,12 @@ export function Sidebar({
             )}
 
             <aside
-                className={`flex flex-col border-r border-border bg-background-secondary flex-shrink-0 fixed md:relative inset-y-0 left-0 z-50 transform transition-all duration-200 ease-in-out ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-                } ${
-                    collapsed ? 'md:w-0 md:border-r-0 md:overflow-hidden' : 'w-[276px] sm:w-[252px]'
-                }`}
-                style={collapsed ? { minWidth: 0 } : undefined}
+                className={`w-[276px] sm:w-[252px] flex flex-col border-r border-border bg-background-secondary flex-shrink-0 fixed md:relative inset-y-0 left-0 z-50 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
                 role="navigation"
                 aria-label="Sidebar navigation"
             >
-                {/* Header - fixed height */}
-                <div
-                    className="h-14 flex items-center justify-between pl-4 pr-2 border-b border-border flex-shrink-0"
-                >
+                {/* Header */}
+                <div className="h-14 flex items-center justify-between pl-4 pr-2 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-2.5 cursor-pointer group transition-all duration-300 hover:opacity-80" onClick={onNavigateHome} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onNavigateHome()}>
                         <img
                             src="/logo.svg"
@@ -138,11 +225,7 @@ export function Sidebar({
                             className="p-2 text-foreground-muted hover:text-foreground transition-colors"
                             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                         >
-                            {theme === 'dark' ? (
-                                <Sun className="w-4 h-4" aria-hidden="true" />
-                            ) : (
-                                <Moon className="w-4 h-4" aria-hidden="true" />
-                            )}
+                            {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
                         </button>
                         {/* Collapse button - desktop only */}
                         <button
@@ -155,7 +238,7 @@ export function Sidebar({
                     </div>
                 </div>
 
-                {/* Search - fixed height */}
+                {/* Search */}
                 <div className="p-3 flex-shrink-0">
                     <label htmlFor="bucket-search" className="sr-only">Search buckets</label>
                     <input
@@ -173,7 +256,7 @@ export function Sidebar({
                     />
                 </div>
 
-                {/* Buckets section header - fixed */}
+                {/* Buckets section header */}
                 <div className="flex items-center justify-between pl-5 pr-2 py-2 flex-shrink-0">
                     <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider" id="buckets-heading">
                         Buckets
@@ -187,7 +270,7 @@ export function Sidebar({
                     </button>
                 </div>
 
-                {/* Buckets list - scrollable */}
+                {/* Buckets list */}
                 <div
                     className="flex-1 overflow-y-auto px-3 min-h-0 bucket-scrollable"
                     role="list"
@@ -241,9 +324,8 @@ export function Sidebar({
                     )}
                 </div>
 
-                {/* Bottom section - Connections, Logout */}
+                {/* Bottom section */}
                 <div className="flex-shrink-0 border-t border-border p-3 pb-safe space-y-1">
-                    {/* Connections button */}
                     {onOpenConnections && (
                         <button
                             onClick={onOpenConnections}
@@ -257,7 +339,6 @@ export function Sidebar({
                         </button>
                     )}
 
-                    {/* Logout button */}
                     {onLogout && (
                         <button
                             onClick={onLogout}
