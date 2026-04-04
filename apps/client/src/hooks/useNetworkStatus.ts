@@ -27,6 +27,8 @@ export function useNetworkStatus(): NetworkStatus {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT);
 
+            // We ping /api/auth/status because it's lightweight, always available, and
+            // even a 401 proves the backend is running (just unauthenticated).
             const response = await fetch('/api/auth/status', {
                 method: 'GET',
                 signal: controller.signal,
@@ -37,7 +39,7 @@ export function useNetworkStatus(): NetworkStatus {
 
             setStatus(prev => ({
                 ...prev,
-                isBackendReachable: response.ok || response.status === 401, // 401 means backend is up
+                isBackendReachable: response.ok || response.status === 401,
                 lastChecked: new Date(),
             }));
         } catch {
@@ -81,7 +83,8 @@ export function useNetworkStatus(): NetworkStatus {
         return () => clearInterval(intervalId);
     }, [checkBackendHealth]);
 
-    // Check when visibility changes (user returns to tab)
+    // Re-check when the user returns to the tab -- the connection state could
+    // have changed while the tab was in the background (laptop sleep, network switch, etc.)
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {

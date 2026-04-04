@@ -11,6 +11,8 @@ interface State {
     errorInfo: ErrorInfo | null;
 }
 
+// Must be a class component -- React only supports error boundaries via
+// getDerivedStateFromError / componentDidCatch, and there's no hook equivalent.
 export class ErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
         super(props);

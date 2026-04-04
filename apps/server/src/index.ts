@@ -36,13 +36,16 @@ app.use(helmet({
   },
 }));
 
-// Trust proxy (Railway/load balancers)
+// Only trust the first proxy hop -- prevents IP spoofing via chained X-Forwarded-For headers
+// when deployed behind a single reverse proxy (Railway, nginx, ALB, etc.)
 app.set('trust proxy', 1);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 
-// Global error logging for debugging
+// Monkey-patch res.json to log 5xx responses -- we intercept here instead of
+// relying on the global error handler because many routes catch errors themselves
+// and return structured JSON without re-throwing.
 app.use((req, res, next) => {
   const originalJson = res.json;
   // @ts-ignore
@@ -55,8 +58,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session configuration
-// Priority: 1. DB (Saved via Setup) 2. Env Var 3. Random Fallback
+// Session secret priority: DB (persisted during setup wizard) > env var > random.
+// DB takes precedence so the setup wizard's choice survives container restarts even
+// without env vars. Random fallback works for dev but invalidates all sessions on restart.
 let sessionSecret = preferences.get('session_secret') || process.env.SESSION_SECRET;
 
 if (!sessionSecret) {
@@ -114,7 +118,8 @@ if (fs.existsSync(publicPath)) {
   console.log(`Serving static files from: ${publicPath}`);
   app.use(express.static(publicPath));
 
-  // SPA catch-all
+  // SPA catch-all: any non-API, non-static route falls through to index.html
+  // so client-side routing (React Router, etc.) can handle it.
   app.get('*', (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
   });

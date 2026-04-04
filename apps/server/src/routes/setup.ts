@@ -13,7 +13,9 @@ router.get('/status', (req, res) => {
 
 // Perform setup (set password)
 router.post('/', async (req, res) => {
-    // 1. Check if already configured
+    // Setup is deliberately one-shot: once a password exists (via env var or this
+    // wizard), this endpoint returns 403 forever. Otherwise any unauthenticated
+    // request could reset the admin password.
     if (!isSetupMode()) {
         return res.status(403).json({ error: 'Server is already configured via setup wizard or environment variable.' });
     }

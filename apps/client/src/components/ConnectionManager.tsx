@@ -4,7 +4,8 @@ import * as api from '../api';
 import type { Connection, ConnectionConfig } from '../api';
 import { Modal } from './Modal';
 
-// Provider Presets
+// Pre-fill endpoint and region per provider so users don't have to look up
+// the correct S3-compatible URL format. Reduces misconfiguration significantly.
 const PROVIDERS = [
   { id: 'aws', name: 'Amazon S3', defaultRegion: 'us-east-1', defaultEndpoint: '' },
   { id: 'cloudflare', name: 'Cloudflare R2', defaultRegion: 'auto', defaultEndpoint: 'https://<accountid>.r2.cloudflarestorage.com' },
@@ -190,7 +191,9 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
   }
 
   function handleRegionChange(region: string) {
-    // For DigitalOcean Spaces, update endpoint to match region
+    // DigitalOcean encodes the region directly in the endpoint URL
+    // (e.g. https://nyc3.digitaloceanspaces.com), so changing region must also
+    // rewrite the endpoint or requests will hit the wrong datacenter.
     if (selectedProvider === 'digitalocean') {
       setForm(prev => ({
         ...prev,
@@ -318,7 +321,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
         <div className="relative flex flex-col">
 
           {error && (
-            <div className="mb-4 p-3 bg-accent-red/15 rounded-md text-accent-red text-[13px] flex items-center gap-2 animate-fadeIn">
+            <div className="mb-4 p-3 bg-accent-red/15 rounded-md text-accent-red text-xs flex items-center gap-2 animate-fadeIn">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -356,16 +359,16 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`font-medium text-base sm:text-sm truncate transition-colors ${conn.isActive ? 'text-foreground' : 'text-foreground group-hover:text-accent-purple'}`}>
+                            <span className={`font-medium text-sm truncate transition-colors ${conn.isActive ? 'text-foreground' : 'text-foreground group-hover:text-accent-purple'}`}>
                               {conn.name}
                             </span>
                             {conn.isActive && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-green/20 text-accent-green">
+                              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-accent-green/20 text-accent-green">
                                 Active
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-foreground-muted font-mono truncate mt-0.5" title={conn.endpoint}>
+                          <p className="text-xs text-foreground-muted font-mono truncate mt-0.5" title={conn.endpoint}>
                             {conn.endpoint || 'https://s3.amazonaws.com'}
                           </p>
                         </div>
@@ -414,7 +417,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       id="conn-provider"
                       value={selectedProvider}
                       onChange={(e) => handleProviderChange(e.target.value)}
-                      className="input appearance-none cursor-pointer pr-10 h-10 text-sm"
+                      className="input appearance-none cursor-pointer pr-10 h-8 text-sm"
                     >
                       {PROVIDERS.map(p => (
                         <option key={p.id} value={p.id}>{p.name}</option>
@@ -434,7 +437,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="Production…"
-                      className="input h-10 text-sm"
+                      className="input h-8 text-sm"
                       autoComplete="off"
                       spellCheck="false"
                     />
@@ -446,7 +449,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                         id="conn-region"
                         value={form.region}
                         onChange={(e) => handleRegionChange(e.target.value)}
-                        className="input appearance-none cursor-pointer pr-10 h-10 text-sm truncate"
+                        className="input appearance-none cursor-pointer pr-10 h-8 text-sm truncate"
                       >
                         {getRegionsForProvider(selectedProvider).map(r => (
                           <option key={r.value} value={r.value}>{r.label}</option>
@@ -466,7 +469,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                     value={form.endpoint}
                     onChange={(e) => setForm({ ...form, endpoint: e.target.value })}
                     placeholder="https://s3.amazonaws.com…"
-                    className="input font-mono h-9 text-sm"
+                    className="input font-mono h-8 text-sm"
                     autoComplete="off"
                     spellCheck="false"
                   />
@@ -482,7 +485,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       value={form.accessKey}
                       onChange={(e) => setForm({ ...form, accessKey: e.target.value })}
                       placeholder="AKIA…"
-                      className="input font-mono h-10 text-sm"
+                      className="input font-mono h-8 text-sm"
                       autoComplete="off"
                       spellCheck="false"
                     />
@@ -495,7 +498,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                       value={form.secretKey}
                       onChange={(e) => setForm({ ...form, secretKey: e.target.value })}
                       placeholder="••••••••"
-                      className="input font-mono h-10 text-sm"
+                      className="input font-mono h-8 text-sm"
                       autoComplete="off"
                     />
                   </div>
@@ -536,7 +539,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                 {/* Test Result */}
                 {testResult && (
                   <div
-                    className={`p-3 rounded-md text-[13px] flex items-center gap-2 border border-border ${testResult.success
+                    className={`p-3 rounded-md text-xs flex items-center gap-2 border border-border ${testResult.success
                       ? 'bg-accent-green/15 text-accent-green'
                       : 'bg-accent-red/15 text-accent-red'
                       }`}

@@ -13,6 +13,8 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const db: DatabaseType = new Database(DB_PATH);
+// WAL mode lets readers and writers operate concurrently -- without it, the express
+// request handlers would block each other on every DB access.
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
@@ -56,7 +58,8 @@ db.exec(`
 
 export default db;
 
-// Session store for express-session (must extend Store)
+// express-session requires the store to extend its abstract Store class so it can
+// call get/set/destroy with the right callback signatures. A plain object won't work.
 export class SQLiteStore extends session.Store {
   private getStmt = db.prepare('SELECT sess FROM sessions WHERE sid = ? AND expired > ?');
   private setStmt = db.prepare('INSERT OR REPLACE INTO sessions (sid, sess, expired) VALUES (?, ?, ?)');
@@ -171,6 +174,8 @@ export const connections = {
 
 // Rate limiting
 const rlGet = db.prepare('SELECT * FROM rate_limits WHERE ip = ?');
+// ON CONFLICT upsert: insert for a new IP, update for an existing one -- avoids a
+// separate SELECT-then-INSERT/UPDATE round-trip on every login attempt.
 const rlUpsert = db.prepare(`
   INSERT INTO rate_limits (ip, attempts, first_attempt, blocked_until)
   VALUES (?, ?, ?, ?)
@@ -201,11 +206,11 @@ export const preferences = {
   delete: (key: string) => prefDelete.run(key),
 };
 
-// Cleanup expired sessions periodically
+// Hourly cleanup keeps the sessions and rate_limits tables from growing unbounded.
+// An hour is frequent enough to prevent bloat but infrequent enough to be invisible.
 setInterval(() => {
   const store = new SQLiteStore();
   store.clearExpired();
-  // Also cleanup old rate limit entries (older than 24h)
   const dayAgo = Date.now() - 86400000;
   rateLimits.cleanup(Date.now(), dayAgo);
-}, 3600000); // Every hour
+}, 3600000);

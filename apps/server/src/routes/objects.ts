@@ -32,7 +32,8 @@ function isValidBucketName(name: string): boolean {
   return /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(name) && !name.includes('..');
 }
 
-// Validate object key
+// Validate object key -- the ../ check blocks path traversal attacks that could
+// escape the intended prefix and access/overwrite arbitrary keys in the bucket.
 function isValidObjectKey(key: string): boolean {
   return key.length > 0 && Buffer.byteLength(key, 'utf8') <= 1024 && !key.includes('../');
 }
@@ -80,7 +81,9 @@ router.get('/:bucket/proxy', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid key' });
     }
 
-    // Single S3 GetObject call - returns stream + headers together
+    // Single GetObject call returns the stream and headers together. An earlier version
+    // did HeadObject first for metadata, then GetObject for the body -- two round-trips
+    // to S3 for every download. GetObject already includes content-type and content-length.
     const { body, contentType, contentLength } = await s3.getObjectStream(bucket, key);
     if (!body) {
       return res.status(404).json({ error: 'Object not found' });
@@ -182,6 +185,9 @@ router.post('/:bucket/upload', upload.array('files'), async (req: Request, res: 
     const { message, s3Code, status } = getS3ErrorDetails(error);
     res.status(status).json({ error: message, s3Code });
   } finally {
+    // Multer writes uploads to disk before we stream them to S3. Always clean up
+    // temp files -- even on error -- to prevent disk fill on repeated failures.
+    // allSettled so one unlink failure doesn't block the rest.
     await Promise.allSettled(
       files
         .filter(file => file.path)

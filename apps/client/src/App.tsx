@@ -56,6 +56,7 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Persisted to localStorage so the sidebar remembers its state across sessions
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
   });
@@ -243,7 +244,12 @@ export default function App() {
     navigationStateRef.current = { bucket: selectedBucket, path: currentPath };
   }, [selectedBucket, currentPath]);
 
-  // Browser history integration for folder navigation
+  // Browser history integration for folder navigation.
+  // isPopState and isInitialMount refs prevent duplicate pushState calls:
+  // - isPopState: when the user hits Back/Forward, we update state from the event
+  //   but must NOT push a new history entry in response (that would break the stack).
+  // - isInitialMount: on first render we replaceState instead of pushing, so
+  //   refreshing the page doesn't create a duplicate entry.
   const isPopState = useRef(false);
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -302,10 +308,14 @@ export default function App() {
     );
   }, [selectedBucket, currentPath]);
 
+  // Upload flow: check connectivity first (fail fast), then auto-rename any
+  // files that collide with existing names so the user never accidentally
+  // overwrites data. We silently rename duplicates (e.g. "photo (1).jpg")
+  // rather than prompting, since prompts would be painful for multi-file drops.
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!selectedBucket || acceptedFiles.length === 0 || uploading) return;
 
-    // Check network status before upload
+    // Bail early if offline -- better UX than waiting for a timeout
     if (!networkStatus.isOnline || !networkStatus.isBackendReachable) {
       showToastMsg('Cannot upload - check your connection', 'error');
       return;
@@ -370,7 +380,9 @@ export default function App() {
       return;
     }
 
-    // Optimistic update - add bucket immediately
+    // Optimistic updates: show the new bucket in the sidebar immediately so the
+    // UI feels instant, then confirm with the server. If the API call fails we
+    // roll back the local state and surface an error toast.
     const newBucket: Bucket = { name, creationDate: new Date().toISOString() };
     setBuckets(prev => [...prev, newBucket].sort((a, b) => a.name.localeCompare(b.name)));
     setShowNewBucket(false);
@@ -378,11 +390,10 @@ export default function App() {
 
     try {
       await api.createBucket(name);
-      // Select the bucket only after it's successfully created
       setSelectedBucket(name);
       showToastMsg(`Bucket "${name}" created`);
     } catch (err: any) {
-      // Rollback on error
+      // Rollback -- revert the optimistic insert
       setBuckets(prev => prev.filter(b => b.name !== name));
       setSelectedBucket(null);
       showToastMsg(err.message || 'Failed to create bucket', 'error');
@@ -390,7 +401,7 @@ export default function App() {
   };
 
   const handleDeleteBucket = async (name: string) => {
-    // Optimistic update - remove bucket immediately
+    // Same optimistic pattern: remove from UI now, rollback if the API rejects
     const previousBuckets = buckets;
     setBuckets(prev => prev.filter(b => b.name !== name));
 
@@ -510,7 +521,8 @@ export default function App() {
     }
   };
 
-  // Batch preview handler - opens preview for all previewable selected files
+  // Filters the selection down to only previewable file types (images, text, etc.)
+  // so folders and unsupported formats are silently skipped in batch preview.
   const handleBatchPreview = useCallback(() => {
     if (selectedKeys.size === 0) return;
     const previewableFiles = objects
@@ -520,7 +532,10 @@ export default function App() {
     setBatchPreviewStartIndex(0);
   }, [selectedKeys, objects]);
 
-  // Batch download handler - downloads all selected non-folder files
+  // Downloads are triggered by programmatic <a> clicks. Browsers throttle or
+  // block rapid sequential downloads, so we stagger them ~200ms apart. This is
+  // the simplest approach that works across Chrome/Firefox/Safari without needing
+  // a zip-on-the-fly server endpoint.
   const handleBatchDownload = useCallback(() => {
     if (selectedKeys.size === 0 || !selectedBucket) return;
     const filesToDownload = objects.filter(obj => selectedKeys.has(obj.key) && !obj.isFolder);
@@ -528,7 +543,6 @@ export default function App() {
       showToastMsg('No files selected to download', 'error');
       return;
     }
-    // Download each file sequentially with small delays to avoid browser blocking
     filesToDownload.forEach((obj, i) => {
       setTimeout(() => {
         const url = api.getProxyUrl(selectedBucket, obj.key);
@@ -712,7 +726,9 @@ export default function App() {
     });
   }, [objects, sortField, sortDirection]);
 
-  // Ref to always have current displayObjects in callbacks
+  // Ref mirrors the latest displayObjects so event callbacks (like handleSelectAll)
+  // always see current data without needing displayObjects in their dependency arrays,
+  // which would re-create the callbacks on every render and break memoization downstream.
   const displayObjectsRef = useRef(displayObjects);
   displayObjectsRef.current = displayObjects;
 
@@ -821,7 +837,6 @@ export default function App() {
               loading={loading}
               selectedKeys={selectedKeys}
               onNavigate={handleNavigate}
-              onDownload={handleDownload}
               onContextMenu={handleContextMenu}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}

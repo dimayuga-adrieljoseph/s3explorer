@@ -195,6 +195,8 @@ export function CommandPalette({
     }
   }, [filteredActions, selectedIndex, onClose]);
 
+  // Flatten grouped actions into a single indexed list so keyboard navigation
+  // (ArrowUp/ArrowDown) can use a simple linear index across all groups.
   const flatList = useMemo(() => {
     const result: { action: CommandAction; category: string; index: number }[] = [];
     let idx = 0;
@@ -282,17 +284,17 @@ export function CommandPalette({
         <div className="px-4 py-2.5 border-t border-border bg-background flex items-center justify-between text-xs text-foreground-muted">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-[10px]">↑</kbd>
-              <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-[10px]">↓</kbd>
+              <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-xs">↑</kbd>
+              <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-xs">↓</kbd>
               <span className="ml-1">Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-background-tertiary border border-border rounded text-[10px]">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-background-tertiary border border-border rounded text-xs">↵</kbd>
               <span className="ml-1">Select</span>
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-[10px]">{isMac ? '⌘' : 'Ctrl'}</kbd>
+            <kbd className="px-1 py-0.5 bg-background-tertiary border border-border rounded text-xs">{isMac ? '⌘' : 'Ctrl'}</kbd>
             <span>K to open</span>
           </div>
         </div>

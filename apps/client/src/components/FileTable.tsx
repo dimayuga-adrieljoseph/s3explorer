@@ -11,7 +11,6 @@ interface FileTableProps {
     loading: boolean;
     selectedKeys: Set<string>;
     onNavigate: (obj: S3Object) => void;
-    onDownload: (obj: S3Object) => void;
     onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
     onSelect: (key: string, selected: boolean) => void;
     onSelectAll: (selected: boolean) => void;
@@ -31,7 +30,6 @@ interface RowProps {
         objects: S3Object[];
         selectedKeys: Set<string>;
         onNavigate: (obj: S3Object) => void;
-        onDownload: (obj: S3Object) => void;
         onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
         onItemSelect: (index: number, key: string, isCurrentlySelected: boolean) => void;
     };
@@ -76,7 +74,9 @@ function SortButton({ field, label, sortField, sortDirection, onSort, className 
     );
 }
 
-// Memoized row component for virtual scrolling
+// react-window calls render on every visible row whenever *any* state changes
+// (e.g. a single checkbox toggle). Memo prevents re-rendering rows whose props
+// haven't actually changed, which matters when hundreds of rows are visible.
 const FileRow = memo(({ index, style, data }: RowProps) => {
     const { objects, selectedKeys, onNavigate, onContextMenu, onItemSelect } = data;
     const obj = objects[index];
@@ -109,18 +109,18 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
                 <span className={`file-icon flex-shrink-0 ${obj.isFolder ? 'text-accent-pink' : 'text-foreground-muted'}`} aria-hidden="true">
                     {getFileIcon(obj.key, obj.isFolder)}
                 </span>
-                <span className="file-name truncate text-[13px]" title={fileName}>
+                <span className="file-name truncate text-xs" title={fileName}>
                     {fileName}
                 </span>
             </div>
 
             {/* Size column */}
-            <div className="w-[72px] hidden sm:flex items-center justify-center text-foreground-muted text-[11px] px-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <div className="w-[72px] hidden sm:flex items-center justify-center text-foreground-muted text-xs px-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {obj.isFolder ? '—' : formatBytes(obj.size)}
             </div>
 
             {/* Modified column */}
-            <div className="w-[88px] hidden md:flex items-center justify-center text-foreground-muted text-[11px] px-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <div className="w-[88px] hidden md:flex items-center justify-center text-foreground-muted text-xs px-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {obj.isFolder ? '—' : obj.lastModified ? <time dateTime={obj.lastModified}>{formatDate(obj.lastModified)}</time> : '—'}
             </div>
 
@@ -128,7 +128,7 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
             <div className="w-12 sm:w-14 flex items-center justify-end pr-2">
                 {/* Size on mobile */}
                 {!obj.isFolder && (
-                    <span className="text-[11px] text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    <span className="text-xs text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
                         {formatBytes(obj.size)}
                     </span>
                 )}
@@ -186,7 +186,7 @@ function StandardRow({ obj, onNavigate, onContextMenu, onItemSelect, isSelected,
                         {getFileIcon(obj.key, obj.isFolder)}
                     </span>
                     <div className="min-w-0 flex-1">
-                        <span className="file-name truncate block text-[13px] max-w-[120px] sm:max-w-none" title={fileName}>
+                        <span className="file-name truncate block text-xs max-w-[120px] sm:max-w-none" title={fileName}>
                             {fileName.length > 20 && window.innerWidth < 640
                                 ? fileName.slice(0, 18) + '…'
                                 : fileName}
@@ -195,18 +195,18 @@ function StandardRow({ obj, onNavigate, onContextMenu, onItemSelect, isSelected,
                 </div>
             </td>
 
-            <td className="text-foreground-muted text-[11px] hidden sm:table-cell !text-center !px-2 whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <td className="text-foreground-muted text-xs hidden sm:table-cell !text-center !px-2 whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {obj.isFolder ? '—' : formatBytes(obj.size)}
             </td>
 
-            <td className="text-foreground-muted text-[11px] hidden md:table-cell !text-center !px-2 whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <td className="text-foreground-muted text-xs hidden md:table-cell !text-center !px-2 whitespace-nowrap" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {obj.isFolder ? '—' : obj.lastModified ? <time dateTime={obj.lastModified}>{formatDate(obj.lastModified)}</time> : '—'}
             </td>
 
             <td className="py-1.5 sm:py-2">
                 <div className="row-actions flex items-center justify-end">
                     {!obj.isFolder && (
-                        <span className="text-[11px] text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        <span className="text-xs text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
                             {formatBytes(obj.size)}
                         </span>
                     )}
@@ -224,12 +224,14 @@ function StandardRow({ obj, onNavigate, onContextMenu, onItemSelect, isSelected,
     );
 }
 
-export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownload, onContextMenu, onSelect, onSelectAll, onSelectRange, sortField, sortDirection, onSort, hasMore, loadingMore, onLoadMore }: FileTableProps) {
+export function FileTable({ objects, loading, selectedKeys, onNavigate, onContextMenu, onSelect, onSelectAll, onSelectRange, sortField, sortDirection, onSort, hasMore, loadingMore, onLoadMore }: FileTableProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const lastClickedIndexRef = useRef<number>(-1);
+    // Track shift state via global keydown/keyup instead of reading e.shiftKey in
+    // click handlers. React's synthetic onChange for checkboxes doesn't reliably
+    // propagate the native shiftKey property, so we maintain our own ground truth.
     const shiftKeyRef = useRef(false);
 
-    // Track shift key state for range selection
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Shift') shiftKeyRef.current = true; };
         const handleKeyUp = (e: KeyboardEvent) => { if (e.key === 'Shift') shiftKeyRef.current = false; };
@@ -262,7 +264,9 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
         lastClickedIndexRef.current = index;
     }, [objects, onSelect, onSelectRange]);
 
-    // Use virtualization for large lists
+    // Below ~100 items a real DOM table with stagger animations feels nicer.
+    // Above that threshold, rendering all rows tanks scroll performance, so we
+    // switch to react-window's virtual scroll which only mounts visible rows.
     const useVirtualization = objects.length > PAGINATION.VIRTUAL_SCROLL_THRESHOLD;
 
     // Get container height for virtual list
@@ -330,7 +334,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                         itemSize={PAGINATION.ROW_HEIGHT}
                         width="100%"
                         overscanCount={PAGINATION.OVERSCAN_COUNT}
-                        itemData={{ objects, selectedKeys, onNavigate, onDownload, onContextMenu, onItemSelect: handleItemSelect }}
+                        itemData={{ objects, selectedKeys, onNavigate, onContextMenu, onItemSelect: handleItemSelect }}
                         onItemsRendered={({ visibleStopIndex }) => {
                             if (hasMore && !loadingMore && onLoadMore && visibleStopIndex >= objects.length - 20) {
                                 onLoadMore();
@@ -353,7 +357,9 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
         );
     }
 
-    // Standard table for smaller lists (with animations)
+    // 100+ simultaneous CSS stagger animations destroy the frame rate (each row
+    // triggers its own composite layer). Skip them when the list is large enough
+    // that the visual payoff isn't worth the perf hit.
     const skipAnimations = objects.length > 100;
 
     return (

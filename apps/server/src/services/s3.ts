@@ -30,7 +30,10 @@ export interface S3ConnectionConfig {
   forcePathStyle?: boolean;
 }
 
-// Get S3 client - uses active connection from DB or provided config
+// A new S3Client is built per call instead of being cached globally. The active
+// connection can change at any time (user switches connections in the UI), and the
+// AWS SDK caches internal state per client, so reusing a stale client would silently
+// talk to the wrong endpoint.
 function getS3Client(configOverride?: S3ConnectionConfig): S3Client {
   if (configOverride) {
     return new S3Client({
@@ -83,6 +86,8 @@ export async function createBucket(name: string): Promise<void> {
   await client.send(command);
 }
 
+// S3 won't let you delete a bucket that still has objects. We drain it first
+// by paginating through all objects and batch-deleting them.
 async function emptyBucket(bucket: string): Promise<void> {
   const client = getS3Client();
   let continuationToken: string | undefined;
@@ -206,9 +211,11 @@ async function deleteObjectWithClient(client: S3Client, bucket: string, key: str
   await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
 }
 
-// Size threshold for multipart upload (100MB)
+// 100MB threshold: below this, a single PutObject is simpler and has less overhead.
+// Above it, multipart gives us parallel uploads and resumability.
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
-// Part size for multipart upload (5MB minimum, using 10MB)
+// 10MB parts: S3 minimum is 5MB, but 10MB reduces the total number of parts (and API
+// calls) while still keeping memory per part reasonable for the server.
 const PART_SIZE = 10 * 1024 * 1024;
 
 export async function uploadObject(
@@ -373,9 +380,14 @@ export async function renameObject(
   const isFolder = oldKey.endsWith('/');
 
   if (isFolder) {
+    // S3 has no native rename -- we simulate it with copy-then-delete.
+    // Folder rename is a two-phase operation for safety:
+    //   Phase 1: copy everything to the new prefix (original data is untouched)
+    //   Phase 2: delete originals
+    // If Phase 2 fails, we roll back by deleting the copies so the user doesn't
+    // end up with duplicated data in both locations.
     const keys = await listAllObjectKeys(client, bucket, oldKey);
 
-    // Build key mappings
     const keyMappings = keys.map(key => ({
       oldKey: key,
       newKey: key.startsWith(oldKey)

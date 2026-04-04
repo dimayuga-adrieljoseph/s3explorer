@@ -74,7 +74,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="input pr-12 font-mono h-11 sm:h-10 text-base sm:text-sm"
+                    className="input pr-12 font-mono h-10 text-sm"
                     placeholder="Enter password"
                     required
                     autoFocus

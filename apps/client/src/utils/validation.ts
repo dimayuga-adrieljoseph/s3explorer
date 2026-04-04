@@ -79,7 +79,8 @@ export function validateFolderName(name: string): ValidationResult {
         return { valid: false, error: 'Cannot start or end with spaces or periods' };
     }
 
-    // Disallow reserved names
+    // Reject Windows reserved device names -- files with these names can't be
+    // saved on Windows, so block them at creation time to avoid download issues.
     const reserved = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'LPT1', 'LPT2', 'LPT3'];
     if (reserved.includes(trimmed.toUpperCase())) {
         return { valid: false, error: 'This name is reserved' };

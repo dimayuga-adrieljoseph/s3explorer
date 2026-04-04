@@ -51,7 +51,7 @@ export function ContextMenuItem({ icon: Icon, label, onClick, danger = false }: 
     return (
         <button
             onClick={onClick}
-            className={`context-menu-item w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] ${colorClasses}`}
+            className={`context-menu-item w-full flex items-center gap-2.5 px-3 py-1.5 text-xs ${colorClasses}`}
             role="menuitem"
         >
             <Icon className="w-4 h-4" aria-hidden="true" />

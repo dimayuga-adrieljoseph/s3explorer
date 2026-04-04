@@ -24,7 +24,9 @@ export const VALIDATION = {
 // Pagination Constants
 export const PAGINATION = {
   OBJECTS_PER_PAGE: 1000,   // S3 list objects limit
-  VIRTUAL_SCROLL_THRESHOLD: 100, // Use virtual scroll when items exceed this
+  // Below ~100 items, native DOM rendering is fast enough and simpler to debug.
+  // Above that, we switch to virtual scrolling to avoid layout jank on large folders.
+  VIRTUAL_SCROLL_THRESHOLD: 100,
   ROW_HEIGHT: 44,           // Height of each row in virtual scroll (px)
   OVERSCAN_COUNT: 5,        // Extra rows to render above/below viewport
   LOAD_MORE_THRESHOLD: 20,  // Start loading more when within this many items of the end

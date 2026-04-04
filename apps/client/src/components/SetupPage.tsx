@@ -86,7 +86,7 @@ export function SetupPage({ onSetupComplete }: SetupPageProps) {
                                     type={showSecret ? "text" : "password"}
                                     value={sessionSecret}
                                     onChange={(e) => setSessionSecret(e.target.value)}
-                                    className="input w-full h-11 sm:h-10 text-base sm:text-sm pr-12 rounded-md"
+                                    className="input w-full h-10 text-sm pr-12 rounded-md"
                                     placeholder="Enter a 32+ char secret..."
                                     required
                                     autoFocus
@@ -135,7 +135,7 @@ export function SetupPage({ onSetupComplete }: SetupPageProps) {
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="input w-full h-11 sm:h-10 text-base sm:text-sm pr-10 rounded-md"
+                                        className="input w-full h-10 text-sm pr-10 rounded-md"
                                         placeholder="Create a strong password..."
                                         required
                                     />
@@ -159,7 +159,7 @@ export function SetupPage({ onSetupComplete }: SetupPageProps) {
                                         type={showConfirmPassword ? "text" : "password"}
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="input w-full h-11 sm:h-10 text-base sm:text-sm pr-10 rounded-md"
+                                        className="input w-full h-10 text-sm pr-10 rounded-md"
                                         placeholder="Repeat password..."
                                         required
                                     />

@@ -47,9 +47,6 @@ export function DeleteModal({ object, onClose, onDelete }: DeleteModalProps) {
                     <span className="text-foreground font-medium">"{fileName}"</span>?
                 </p>
 
-                {/* Warning for folders */}
-
-
                 {/* Actions */}
                 <div className="flex gap-3 mt-5">
                     <button

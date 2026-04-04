@@ -63,7 +63,9 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
-    // Test connection first
+    // Test the connection before persisting so we can warn the user about bad creds
+    // upfront. We still save on failure (testPassed=false) -- the user might be
+    // configuring ahead of time before the S3 endpoint is ready.
     const config: S3ConnectionConfig = {
       endpoint,
       accessKey,
@@ -84,7 +86,8 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    // Encrypt credentials
+    // Credentials are AES-256-GCM encrypted before touching the DB -- even if the
+    // SQLite file is exfiltrated, keys are useless without the encryption.key file.
     const accessKeyEnc = encryptAndPack(accessKey);
     const secretKeyEnc = encryptAndPack(secretKey);
 
@@ -111,7 +114,7 @@ router.post('/', async (req: Request, res: Response) => {
 // Update connection
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const { name, endpoint, accessKey, secretKey, region, forcePathStyle } = req.body;
 
     const existing = connections.getById(id);
@@ -173,7 +176,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 // Delete connection
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const existing = connections.getById(id);
 
     if (!existing) {
@@ -197,7 +200,7 @@ router.delete('/:id', (req: Request, res: Response) => {
 // Set active connection
 router.post('/:id/activate', (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id, 10);
     const existing = connections.getById(id);
 
     if (!existing) {

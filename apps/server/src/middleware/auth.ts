@@ -22,7 +22,8 @@ export function validatePasswordStrength(password: string): { valid: boolean; re
   return { valid: true };
 }
 
-// Rate limiting config
+// Rate limit state lives in SQLite (see db.ts) so it survives server restarts --
+// an in-memory map would let attackers reset counters just by restarting the process.
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 10; // 10 attempts per 15 min
 const BLOCK_DURATION = 30 * 60 * 1000; // 30 min block after exceeding
@@ -92,12 +93,17 @@ import { preferences } from '../services/db.js';
 let passwordHash: string = '';
 let setupMode = false;
 
-// Initialize auth state
+// Three auth modes, checked in order:
+// 1. APP_PASSWORD env var -- for CI/Docker where you set creds at deploy time
+// 2. DB hash -- set via the setup wizard, already argon2-hashed so we use it directly
+// 3. Setup mode -- no password anywhere, so force the user through first-run setup
 export async function initializeAuth() {
   const envPassword = process.env.APP_PASSWORD;
 
   if (envPassword) {
     console.log('Auth: Using APP_PASSWORD from environment');
+    // Argon2id is the default -- resistant to both side-channel and GPU attacks,
+    // unlike bcrypt which has a 72-byte input limit and weaker GPU resistance.
     passwordHash = await argon2.hash(envPassword);
     setupMode = false;
     return;
@@ -106,6 +112,7 @@ export async function initializeAuth() {
   const dbPassword = preferences.get('admin_password');
   if (dbPassword) {
     console.log('Auth: Using stored admin password from database');
+    // Already hashed by setAdminPassword, no need to re-hash
     passwordHash = dbPassword;
     setupMode = false;
     return;
@@ -177,7 +184,8 @@ export async function login(req: Request, res: Response): Promise<void> {
     req.session.authenticated = true;
     req.session.loginTime = Date.now();
 
-    // Set session duration based on rememberMe
+    // "Remember me" gets 7 days; default gets 1 day. We override the session-level
+    // default (also 1 day) here so the cookie lifetime matches user intent.
     if (rememberMe) {
       req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
     } else {

@@ -14,7 +14,8 @@ export function generateUniqueName(
     existingNames: Set<string>,
     isFolder: boolean = false
 ): string {
-    // Normalize for case-insensitive comparison
+    // S3 keys are technically case-sensitive, but users don't expect "Photo.jpg"
+    // and "photo.jpg" to coexist in the same folder, so we compare case-insensitively.
     const existingNamesLower = new Set(
         Array.from(existingNames).map(n => n.toLowerCase())
     );
@@ -42,7 +43,8 @@ export function generateUniqueName(
         }
     }
 
-    // Remove existing (n) suffix if present to get base name
+    // Strip an existing "(n)" suffix first so re-uploading "file (1).jpg" becomes
+    // "file (2).jpg" instead of the ugly "file (1) (1).jpg".
     const suffixMatch = nameWithoutExt.match(/^(.+)\s*\((\d+)\)$/);
     if (suffixMatch) {
         nameWithoutExt = suffixMatch[1].trim();
@@ -71,12 +73,13 @@ export function resolveUploadConflicts(
     existingNames: Set<string>
 ): Map<File, string> {
     const result = new Map<File, string>();
+    // Tracks names we've already assigned in *this* batch. Without this, uploading
+    // three copies of "photo.jpg" at once would all resolve to "photo (1).jpg".
     const usedNames = new Set(existingNames);
 
     for (const file of files) {
         const uniqueName = generateUniqueName(file.name, usedNames, false);
         result.set(file, uniqueName);
-        // Add to used names so subsequent files in the batch also get unique names
         usedNames.add(uniqueName.toLowerCase());
     }
 

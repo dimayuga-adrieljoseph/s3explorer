@@ -5,7 +5,8 @@ const API_BASE = '/api';
 
 export type { Bucket, S3Object };
 
-// Request cancellation
+// Dedup concurrent requests: navigating fast fires multiple list calls for the
+// same key, so we track in-flight requests and abort the stale one before starting a new one.
 const activeRequests = new Map<string, AbortController>();
 
 export function cancelRequest(key: string) {
@@ -71,6 +72,8 @@ async function fetchWithTimeout(
     cancelRequest(requestKey);
   }
 
+  // Roll our own timeout via AbortController + setTimeout because the native
+  // fetch `signal.timeout` isn't supported in all browsers we target.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -88,8 +91,9 @@ async function fetchWithTimeout(
     return response;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      // Check if it was a manual cancel (our controller was replaced by a newer one)
-      // or if we were removed entirely — either way, we were cancelled, not timed out
+      // Both manual cancel and timeout trigger AbortError. We distinguish them by
+      // checking whether the Map still holds *our* controller -- if a newer request
+      // replaced it, this abort was a cancellation, not a timeout.
       const currentController = requestKey ? activeRequests.get(requestKey) : undefined;
       const wasCancelled = requestKey && currentController !== controller;
       if (wasCancelled) {
@@ -117,7 +121,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
-    // Extract S3 error code if present
+    // S3-compatible providers (AWS, MinIO, Backblaze, etc.) each put error codes
+    // in different response fields, so we check all known locations.
     const s3Code = data.s3Code || data.code || data.Code;
     const message = data.error || data.message || data.Message || 'Request failed';
 
@@ -322,6 +327,8 @@ export async function uploadFiles(
 
   const url = `${API_BASE}/objects/${encodeURIComponent(bucket)}/upload`;
 
+  // XHR instead of fetch because fetch has no upload progress event support.
+  // We need progress tracking for the upload progress bar.
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);

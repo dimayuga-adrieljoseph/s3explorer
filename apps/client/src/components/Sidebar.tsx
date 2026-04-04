@@ -73,6 +73,8 @@ export function Sidebar({
             setCopiedBucket(bucketName);
             setTimeout(() => setCopiedBucket(null), 2000);
         } catch {
+            // Clipboard API fails without HTTPS (except localhost). Fall back to
+            // the deprecated execCommand approach so copy still works over plain HTTP.
             try {
                 const textArea = document.createElement('textarea');
                 textArea.value = bucketName;
@@ -116,7 +118,7 @@ export function Sidebar({
                     placeholder="Search buckets…"
                     value={localSearch}
                     onChange={e => setLocalSearch(e.target.value)}
-                    className="input h-8 text-[13px] !rounded-md"
+                    className="input h-8 text-xs !rounded-md"
                     tabIndex={collapsed ? -1 : 0}
                     aria-label="Search buckets"
                     autoComplete="off"
@@ -127,7 +129,7 @@ export function Sidebar({
 
             {/* Buckets header */}
             <div className="flex items-center justify-between pl-[18px] pr-1.5 py-1.5 flex-shrink-0">
-                <span className="text-[10px] font-semibold text-foreground-muted uppercase tracking-wider" id="buckets-heading">Buckets</span>
+                <span className="text-xs font-semibold text-foreground-muted uppercase tracking-wider" id="buckets-heading">Buckets</span>
                 <button onClick={onNewBucket} className="create-bucket-btn p-1.5 text-foreground-secondary hover:text-foreground transition-all" tabIndex={collapsed ? -1 : 0} aria-label="Create new bucket">
                     <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -149,7 +151,7 @@ export function Sidebar({
                             aria-label={`Bucket: ${bucket.name}`}
                         >
                             <Database className="sidebar-icon w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="flex-1 truncate text-[13px]">{bucket.name}</span>
+                            <span className="flex-1 truncate text-xs">{bucket.name}</span>
                             <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                 <button onClick={e => handleCopyBucketName(e, bucket.name)} className="flex items-center justify-center w-6 h-6 rounded text-foreground-secondary hover:text-accent-purple active:scale-95 transition-all" tabIndex={collapsed ? -1 : 0} aria-label={`Copy: ${bucket.name}`}>
                                     {copiedBucket === bucket.name ? <Check className="w-3 h-3 text-accent-green" /> : <Copy className="w-3 h-3" />}
@@ -169,17 +171,17 @@ export function Sidebar({
             {/* Bottom section */}
             <div className="flex-shrink-0 border-t border-border px-2.5 py-1.5 pb-safe">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-xs transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
                         <Settings className="w-3.5 h-3.5 flex-shrink-0" />
                         <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
-                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0}>
+                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-foreground text-xs transition-colors" tabIndex={collapsed ? -1 : 0}>
                     <Github className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>GitHub</span>
                 </a>
                 {onLogout && (
-                    <button onClick={onLogout} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                    <button onClick={onLogout} className="w-full flex items-center gap-2 h-8 px-2.5 text-foreground-muted hover:text-accent-red text-xs transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
                         <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>Logout</span>
                     </button>
@@ -243,7 +245,10 @@ export function Sidebar({
                 <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onCloseSidebar} />
             )}
 
-            {/* ── Desktop sidebar: single element, smooth width transition ── */}
+            {/* Desktop and mobile need separate <aside> elements because they use
+               incompatible positioning models: desktop animates width in the normal
+               document flow, while mobile uses a fixed overlay with translate. You
+               can't combine both behaviors on one element without layout thrashing. */}
             <aside
                 className="hidden md:block relative border-r border-border bg-background-secondary flex-shrink-0 overflow-hidden"
                 style={{
@@ -253,6 +258,12 @@ export function Sidebar({
                 role="navigation"
                 aria-label="Sidebar navigation"
             >
+                {/* Cross-fade between collapsed and expanded content. The staggered
+                   timing matters: the outgoing layer fades out instantly (120ms, no delay)
+                   so it clears before the width animation visually starts, then the
+                   incoming layer fades in after an 80ms delay to sync with the width
+                   change. Without this stagger, both layers briefly overlap mid-transition. */}
+
                 {/* Collapsed layer */}
                 <div
                     className="absolute inset-0"

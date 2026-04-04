@@ -18,11 +18,15 @@ export function WelcomeMessage({ onConfigure }: WelcomeMessageProps) {
       return;
     }
 
-    // Show after a short delay for better UX
+    // Delay showing the welcome toast so it doesn't flash briefly if the app
+    // already has a saved connection and immediately starts loading data.
     const timer = setTimeout(() => setVisible(true), 500);
     return () => clearTimeout(timer);
   }, []);
 
+  // Two-step dismiss: first fade out via opacity transition (300ms CSS
+  // duration matches the class below), then remove from DOM after the
+  // transition completes so the element doesn't linger invisibly.
   const handleDismiss = () => {
     setVisible(false);
     localStorage.setItem(STORAGE_KEYS.WELCOME_DISMISSED, 'true');

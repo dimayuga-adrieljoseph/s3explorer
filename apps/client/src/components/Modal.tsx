@@ -12,10 +12,13 @@ interface ModalProps {
 export function Modal({ title, children, onClose, isOpen = true, size = 'md' }: ModalProps) {
     const modalRef = useRef<HTMLDivElement>(null);
     const previousActiveElement = useRef<Element | null>(null);
+    // Store onClose in a ref so the Escape key effect doesn't re-run when the
+    // callback identity changes. Callers almost always pass an inline arrow
+    // function, which creates a new reference every render and would otherwise
+    // tear down and re-attach the keyboard listener on every single render.
     const onCloseRef = useRef(onClose);
     const titleId = useId();
 
-    // Keep onClose ref updated without triggering useEffect
     useEffect(() => {
         onCloseRef.current = onClose;
     });
@@ -34,7 +37,10 @@ export function Modal({ title, children, onClose, isOpen = true, size = 'md' }: 
             if (e.key === 'Escape') handleClose();
         };
 
-        // Focus trap
+        // Focus trap: when the user Tabs past the last focusable element, wrap
+        // back to the first one (and vice versa with Shift+Tab). This keeps
+        // keyboard focus locked inside the modal so it can't escape to the page
+        // behind the overlay, which would be disorienting for keyboard users.
         const handleTab = (e: KeyboardEvent) => {
             if (e.key !== 'Tab' || !modalRef.current) return;
 
@@ -57,7 +63,9 @@ export function Modal({ title, children, onClose, isOpen = true, size = 'md' }: 
         window.addEventListener('keydown', handleEscape);
         window.addEventListener('keydown', handleTab);
 
-        // Focus first focusable element after a short delay to ensure DOM is ready
+        // rAF waits one frame so the DOM is fully painted before we try to
+        // focus. Focusing during the same tick as mount can silently fail if
+        // the browser hasn't finished layout yet.
         requestAnimationFrame(() => {
             const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
                 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'

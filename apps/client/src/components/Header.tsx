@@ -131,7 +131,7 @@ export function Header({
                     >
                         <Search className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
                         <span className="text-xs">Search...</span>
-                        <kbd className="flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-medium bg-background border border-border rounded ml-auto" aria-hidden="true">
+                        <kbd className="flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-background border border-border rounded ml-auto" aria-hidden="true">
                             <span>{isMac ? '⌘' : 'Ctrl'}</span>
                             <span>K</span>
                         </kbd>

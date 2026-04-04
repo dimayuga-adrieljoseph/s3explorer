@@ -16,11 +16,15 @@ function getEncryptionKey(): Buffer {
     return fs.readFileSync(KEY_PATH);
   }
   const key = crypto.randomBytes(32);
+  // 0o600 = owner read/write only -- keeps the key unreadable by other OS users
+  // on the same host, which matters in shared-server or misconfigured Docker setups.
   fs.writeFileSync(KEY_PATH, key, { mode: 0o600 });
   return key;
 }
 
 const ENCRYPTION_KEY = getEncryptionKey();
+// AES-256-GCM provides authenticated encryption -- the auth tag ensures ciphertext
+// hasn't been tampered with, unlike CBC which only guarantees confidentiality.
 const ALGORITHM = 'aes-256-gcm';
 
 export interface EncryptedData {
@@ -57,7 +61,8 @@ export function decrypt(data: EncryptedData): string {
   return decrypted;
 }
 
-// Pack encrypted data into single string for DB storage
+// pack/unpack serialize the {encrypted, iv, tag} triple into a single JSON string
+// so each encrypted credential fits in one TEXT column instead of three.
 export function pack(data: EncryptedData): string {
   return JSON.stringify(data);
 }

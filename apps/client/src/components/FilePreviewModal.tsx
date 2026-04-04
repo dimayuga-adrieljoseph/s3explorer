@@ -100,17 +100,18 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
         return () => { window.removeEventListener('keydown', handleKeyDown); document.body.style.overflow = ''; };
     }, [activeObject, stableOnClose, isMulti, goToPrev, goToNext, previewType, zoomIn, zoomOut, zoomReset]);
 
-    // Mouse wheel zoom for images - continuous multiplicative scaling
     useEffect(() => {
         if (!activeObject || previewType !== 'image') return;
         const container = imageContainerRef.current;
         if (!container) return;
         const handleWheel = (e: WheelEvent) => {
             e.preventDefault();
-            // Normalize delta: trackpad gives small values, mouse wheel gives ~100-120
-            // Convert to a smooth multiplier around 1.0
             const normalized = -e.deltaY / 300;
-            const factor = Math.pow(2, normalized); // smooth exponential: scroll up = zoom in
+            // Exponential scaling (2^x) ensures each scroll tick changes zoom by a
+            // consistent *percentage* regardless of current zoom level. Dividing by
+            // 300 normalizes between trackpad (small deltas) and mouse wheel (~100-120
+            // per notch) so both feel smooth.
+            const factor = Math.pow(2, normalized);
             setZoom(z => Math.min(Math.max(z * factor, ZOOM_MIN), ZOOM_MAX));
         };
         container.addEventListener('wheel', handleWheel, { passive: false });
@@ -153,6 +154,8 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                                 maxWidth: zoom <= 1 ? '100%' : 'none',
                                 maxHeight: zoom <= 1 ? '100%' : 'none',
                                 objectFit: 'contain',
+                                // Hint the browser to promote this to its own GPU layer so
+                                // scale transforms during zoom don't repaint the whole page.
                                 willChange: 'transform',
                             }}
                             onLoad={() => setImageLoaded(true)}
@@ -164,6 +167,9 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
             case 'video':
                 return (
                     <div className="flex items-center justify-center w-full h-full">
+                        {/* key={activeObject.key} forces a full remount when switching between
+                           files. Without it, React reuses the element and the browser keeps
+                           playing the previous source even after the <source> src changes. */}
                         <video key={activeObject.key} controls autoPlay className="max-w-full max-h-full rounded" onError={() => setError('Failed to load video')}>
                             <source src={proxyUrl} />
                         </video>
@@ -179,6 +185,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                             </svg>
                         </div>
                         <p className="text-sm text-foreground-secondary">{fileName}</p>
+                        {/* Same remount trick as <video> above -- see comment there. */}
                         <audio key={activeObject.key} controls autoPlay className="w-full max-w-md" onError={() => setError('Failed to load audio')}>
                             <source src={proxyUrl} />
                         </audio>
@@ -198,7 +205,7 @@ export function FilePreviewModal({ object, bucket, onClose, onDownload, objects,
                 }
                 return (
                     <div className="w-full h-full overflow-auto bg-background rounded border border-border">
-                        <pre className="text-[13px] font-mono text-foreground whitespace-pre-wrap break-words p-4 leading-relaxed">{textContent}</pre>
+                        <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words p-4 leading-relaxed">{textContent}</pre>
                     </div>
                 );
 
