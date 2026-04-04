@@ -167,10 +167,10 @@ export function Sidebar({
             </div>
 
             {/* Bottom */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe space-y-px">
+            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe space-y-0.5">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-background-hover text-[12px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
-                        <Settings className="w-3.5 h-3.5 flex-shrink-0" />
+                    <button onClick={onOpenConnections} className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
+                        <Settings className="w-4 h-4 flex-shrink-0" />
                         <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
@@ -178,16 +178,16 @@ export function Sidebar({
                     href="https://github.com/subratomandal/s3explorer"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-background-hover text-[12px] transition-colors"
+                    className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-foreground text-[13px] transition-colors"
                     tabIndex={collapsed ? -1 : 0}
                     aria-label="GitHub repository (opens in new tab)"
                 >
-                    <Github className="w-3.5 h-3.5 flex-shrink-0" />
+                    <Github className="w-4 h-4 flex-shrink-0" />
                     <span>GitHub</span>
                 </a>
                 {onLogout && (
-                    <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-foreground-secondary hover:text-accent-red hover:bg-background-hover text-[12px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
-                        <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
+                    <button onClick={onLogout} className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-foreground-muted hover:text-accent-red text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
+                        <LogOut className="w-4 h-4 flex-shrink-0" />
                         <span>Logout</span>
                     </button>
                 )}
