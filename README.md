@@ -122,14 +122,7 @@ Or skip these and configure through the setup wizard on first launch.
 #### Docker
 
 ```bash
-docker run -d \
-  --name s3explorer \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  -e APP_PASSWORD='YourStr0ng!Pass#2024' \
-  -e SESSION_SECRET="$(openssl rand -hex 32)" \
-  -v s3explorer_data:/data \
-  ghcr.io/subratomandal/s3explorer:latest
+docker run -d --name s3explorer --restart unless-stopped -p 3000:3000 -e APP_PASSWORD='YourStr0ng!Pass#2024' -e SESSION_SECRET="$(openssl rand -hex 32)" -v s3explorer_data:/data ghcr.io/subratomandal/s3explorer:latest
 ```
 
 #### Docker Compose
