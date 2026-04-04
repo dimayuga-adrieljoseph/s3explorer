@@ -166,22 +166,22 @@ export function Sidebar({
                 )}
             </div>
 
-            {/* Bottom section */}
-            <div className="flex-shrink-0 border-t border-border px-3 py-1 pb-safe space-y-0 sm:space-y-1">
+            {/* Bottom section — px-3 matches bucket list container, px-3 inner matches sidebar-item padding */}
+            <div className="flex-shrink-0 border-t border-border px-3 py-1 pb-safe">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start h-10 !rounded-md" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
-                        <Settings className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                        <span className="flex-1 truncate text-base sm:text-sm text-left">{activeConnectionName || 'Connections'}</span>
+                    <button onClick={onOpenConnections} className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-foreground text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                        <Settings className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1 truncate text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
-                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="sidebar-item w-full justify-start h-10 !rounded-md" tabIndex={collapsed ? -1 : 0} aria-label="GitHub repository">
-                    <Github className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <span className="text-base sm:text-sm">GitHub</span>
+                <a href="https://github.com/subratomandal/s3explorer" target="_blank" rel="noopener noreferrer" className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-foreground text-[13px] transition-colors" tabIndex={collapsed ? -1 : 0}>
+                    <Github className="w-4 h-4 flex-shrink-0" />
+                    <span>GitHub</span>
                 </a>
                 {onLogout && (
-                    <button onClick={onLogout} className="sidebar-item w-full justify-start h-10 !rounded-md hover:text-accent-red" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
-                        <LogOut className="sidebar-icon w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                        <span className="text-base sm:text-sm">Logout</span>
+                    <button onClick={onLogout} className="w-full flex items-center gap-[10px] h-10 px-3 text-foreground-muted hover:text-accent-red text-[13px] transition-colors cursor-pointer" tabIndex={collapsed ? -1 : 0}>
+                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                        <span>Logout</span>
                     </button>
                 )}
             </div>
