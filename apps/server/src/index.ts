@@ -77,7 +77,10 @@ app.use(session({
   saveUninitialized: false,
   store: new SQLiteStore() as any,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    // 'auto' lets express-session use the trust proxy setting to decide:
+    // secure over HTTPS, plain over HTTP. This is critical for self-hosted
+    // Docker deployments accessed via http://localhost without a TLS proxy.
+    secure: 'auto',
     httpOnly: true,
     sameSite: 'strict',
     maxAge: 24 * 60 * 60 * 1000, // 1 day default
