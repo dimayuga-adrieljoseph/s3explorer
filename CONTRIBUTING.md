@@ -1,8 +1,10 @@
-# Contributing to S3 Explorer
+<small>
+  
+## Contributing to S3 Explorer
 
 Thanks for your interest in contributing, this covers everything you need
 
-## Project Structure
+### Project Structure
 
 ```
 s3explorer/
@@ -25,7 +27,7 @@ s3explorer/
         types/       # Shared interfaces
 ```
 
-## Local Development
+### Local Development
 
 ```bash
 git clone https://github.com/subratomandal/s3explorer.git
@@ -41,18 +43,18 @@ npm run dev
 
 Backend on :3000, frontend on :5173, Vite proxies `/api` to Express
 
-## Before You Start
+### Before You Start
 
 1. Check existing [issues](https://github.com/subratomandal/s3explorer/issues)
 2. For large changes, open an issue first
 
-## Branch Naming
+### Branch Naming
 
 1. `fix/short-description`
 2. `feat/short-description`
 3. `docs/short-description`
 
-## Code Style
+### Code Style
 
 1. TypeScript strict mode, avoid `any`
 2. Functional React components, hooks only
@@ -60,7 +62,7 @@ Backend on :3000, frontend on :5173, Vite proxies `/api` to Express
 4. camelCase for variables, PascalCase for components, UPPER_SNAKE for constants
 5. Comments only where the "why" isn't obvious
 
-## Testing Changes
+### Testing Changes
 
 ```bash
 cd apps/client && npx tsc --noEmit
@@ -68,7 +70,7 @@ cd apps/server && npx tsc --noEmit
 npm run build
 ```
 
-## Key Files
+### Key Files
 
 | File | What it does |
 |------|-------------|
@@ -79,12 +81,14 @@ npm run build
 | `apps/server/src/services/crypto.ts` | AES-256-GCM encrypt/decrypt for stored credentials |
 | `apps/server/src/middleware/auth.ts` | Password verification, rate limiting, sessions |
 
-## Pull Requests
+### Pull Requests
 
 1. One feature or fix per PR
 2. Both `tsc --noEmit` checks must pass
 3. Test in dark and light themes, desktop and mobile
 
-## License
+### License
 
 By contributing, you agree your work is licensed under MIT
+
+<small>
