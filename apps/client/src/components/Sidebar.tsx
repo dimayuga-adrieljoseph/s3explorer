@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Database, Plus, Trash2, Copy, Check, Settings, LogOut, Sun, Moon, PanelLeftClose, PanelLeft, Github } from 'lucide-react';
 import type { Bucket } from '../types';
 import { useDebounce } from '../hooks/useDebounce';
 import { UI_DELAYS } from '../constants';
@@ -167,19 +167,34 @@ export function Sidebar({
             </div>
 
             {/* Bottom */}
-            <div className="flex-shrink-0 border-t border-border p-3 pb-safe space-y-1">
+            <div className="flex-shrink-0 border-t border-border px-3 py-2 pb-safe">
                 {onOpenConnections && (
-                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
+                    <button onClick={onOpenConnections} className="sidebar-item w-full justify-start mb-1" tabIndex={collapsed ? -1 : 0} aria-label={activeConnectionName ? `Connected: ${activeConnectionName}` : 'Connections'}>
                         <Settings className="w-4 h-4 flex-shrink-0" />
-                        <span className="flex-1 truncate text-base sm:text-sm text-left">{activeConnectionName || 'Connections'}</span>
+                        <span className="flex-1 truncate text-[13px] text-left">{activeConnectionName || 'Connections'}</span>
                     </button>
                 )}
-                {onLogout && (
-                    <button onClick={onLogout} className="sidebar-item w-full justify-start hover:text-accent-red" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
-                        <LogOut className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-base sm:text-sm">Logout</span>
-                    </button>
-                )}
+                <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-0.5">
+                        <a
+                            href="https://github.com/subratomandal/s3explorer"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-foreground-muted hover:text-foreground transition-colors"
+                            tabIndex={collapsed ? -1 : 0}
+                            aria-label="GitHub repository (opens in new tab)"
+                            title="GitHub"
+                        >
+                            <Github className="w-[15px] h-[15px]" />
+                        </a>
+                    </div>
+                    {onLogout && (
+                        <button onClick={onLogout} className="h-8 px-2.5 flex items-center gap-1.5 rounded-md text-foreground-muted hover:text-accent-red text-[12px] transition-colors" tabIndex={collapsed ? -1 : 0} aria-label="Logout">
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Logout</span>
+                        </button>
+                    )}
+                </div>
             </div>
         </>
     );
@@ -221,6 +236,16 @@ export function Sidebar({
                     <Settings className="w-4 h-4" />
                 </button>
             )}
+            <a
+                href="https://github.com/subratomandal/s3explorer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="GitHub"
+                title="GitHub"
+            >
+                <Github className="w-4 h-4" />
+            </a>
             {onLogout && (
                 <button onClick={onLogout} className="w-9 h-9 flex items-center justify-center text-foreground-muted hover:text-accent-red transition-colors flex-shrink-0" aria-label="Logout" title="Logout">
                     <LogOut className="w-4 h-4" />

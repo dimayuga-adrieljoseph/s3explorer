@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, memo } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { Download, MoreHorizontal, Check } from 'lucide-react';
+import { MoreHorizontal, Check } from 'lucide-react';
 import type { S3Object, SortField, SortDirection } from '../types';
 import { formatBytes, formatDate } from '../utils/formatters';
 import { getFileName, getFileIcon } from '../utils/fileUtils';
@@ -78,7 +78,7 @@ function SortButton({ field, label, sortField, sortDirection, onSort, className 
 
 // Memoized row component for virtual scrolling
 const FileRow = memo(({ index, style, data }: RowProps) => {
-    const { objects, selectedKeys, onNavigate, onDownload, onContextMenu, onItemSelect } = data;
+    const { objects, selectedKeys, onNavigate, onContextMenu, onItemSelect } = data;
     const obj = objects[index];
     const fileName = getFileName(obj.key);
     const isSelected = selectedKeys.has(obj.key);
@@ -125,21 +125,12 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
             </div>
 
             {/* Actions column */}
-            <div className="w-16 sm:w-[72px] flex items-center justify-end gap-0.5 pr-2">
+            <div className="w-12 sm:w-14 flex items-center justify-end pr-2">
                 {/* Size on mobile */}
                 {!obj.isFolder && (
                     <span className="text-[11px] text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
                         {formatBytes(obj.size)}
                     </span>
-                )}
-                {!obj.isFolder && (
-                    <button
-                        onClick={e => { e.stopPropagation(); onDownload(obj); }}
-                        className="btn btn-ghost btn-icon w-8 h-8"
-                        aria-label={`Download ${fileName}`}
-                    >
-                        <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
                 )}
                 <button
                     onClick={e => { e.stopPropagation(); onContextMenu(e, obj); }}
@@ -157,10 +148,9 @@ const FileRow = memo(({ index, style, data }: RowProps) => {
 FileRow.displayName = 'FileRow';
 
 // Standard table row for non-virtualized rendering
-function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect, isSelected, index, skipAnimations }: {
+function StandardRow({ obj, onNavigate, onContextMenu, onItemSelect, isSelected, index, skipAnimations }: {
     obj: S3Object;
     onNavigate: (obj: S3Object) => void;
-    onDownload: (obj: S3Object) => void;
     onContextMenu: (e: React.MouseEvent, obj: S3Object) => void;
     onItemSelect: (index: number, key: string, isCurrentlySelected: boolean) => void;
     isSelected: boolean;
@@ -214,20 +204,11 @@ function StandardRow({ obj, onNavigate, onDownload, onContextMenu, onItemSelect,
             </td>
 
             <td className="py-1.5 sm:py-2">
-                <div className="row-actions flex items-center justify-end gap-0.5">
+                <div className="row-actions flex items-center justify-end">
                     {!obj.isFolder && (
                         <span className="text-[11px] text-foreground-muted sm:hidden mr-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
                             {formatBytes(obj.size)}
                         </span>
-                    )}
-                    {!obj.isFolder && (
-                        <button
-                            onClick={e => { e.stopPropagation(); onDownload(obj); }}
-                            className="btn btn-ghost btn-icon w-8 h-8"
-                            aria-label={`Download ${fileName}`}
-                        >
-                            <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
                     )}
                     <button
                         onClick={e => { e.stopPropagation(); onContextMenu(e, obj); }}
@@ -338,7 +319,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                     <div className="w-[88px] hidden md:flex justify-center px-2 py-2">
                         <SortButton field="lastModified" label="Modified" {...sortProps} />
                     </div>
-                    <div className="w-16 sm:w-[72px] py-2"><span className="sr-only">Actions</span></div>
+                    <div className="w-12 sm:w-14 py-2"><span className="sr-only">Actions</span></div>
                 </div>
 
                 {/* Virtualized list */}
@@ -398,7 +379,7 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                         <th scope="col" className="w-[88px] hidden md:table-cell !text-center !px-2">
                             <SortButton field="lastModified" label="Modified" {...sortProps} className="justify-center w-full" />
                         </th>
-                        <th scope="col" className="w-16 sm:w-[72px]"><span className="sr-only">Actions</span></th>
+                        <th scope="col" className="w-12 sm:w-14"><span className="sr-only">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -407,7 +388,6 @@ export function FileTable({ objects, loading, selectedKeys, onNavigate, onDownlo
                             key={obj.key}
                             obj={obj}
                             onNavigate={onNavigate}
-                            onDownload={onDownload}
                             onContextMenu={onContextMenu}
                             onItemSelect={handleItemSelect}
                             isSelected={selectedKeys.has(obj.key)}
