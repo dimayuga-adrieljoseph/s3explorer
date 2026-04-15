@@ -22,8 +22,8 @@ RUN npm run build
 FROM node:20-alpine AS production
 WORKDIR /app
 
-# Install native deps for better-sqlite3
-RUN apk add --no-cache python3 make g++
+# Install native deps for better-sqlite3 and su-exec for privilege dropping
+RUN apk add --no-cache python3 make g++ su-exec
 
 # Copy server build and dependencies
 COPY --from=server-builder /app/server/dist ./dist
@@ -43,9 +43,11 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATA_DIR=/data
 
-# Run as non-root user
-USER node
+COPY --chown=root:root entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3000
 
+# entrypoint runs as root to fix /data permissions, then drops to node
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "dist/index.js"]
