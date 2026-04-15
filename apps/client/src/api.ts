@@ -181,6 +181,7 @@ export interface Connection {
   forcePathStyle: boolean;
   isActive: boolean;
   createdAt: string;
+  bucket?: string | null;
 }
 
 export interface ConnectionConfig {
@@ -190,6 +191,7 @@ export interface ConnectionConfig {
   secretKey: string;
   region?: string;
   forcePathStyle?: boolean;
+  bucket?: string;
 }
 
 export async function listConnections(): Promise<Connection[]> {

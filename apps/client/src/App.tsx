@@ -129,7 +129,13 @@ export default function App() {
       const conn = await api.getActiveConnection();
       setActiveConnection(conn);
       if (conn) {
-        loadBuckets();
+        if (conn.bucket) {
+          // Single-bucket connection (e.g., GCS): skip listBuckets, auto-select
+          setBuckets([{ name: conn.bucket }]);
+          setSelectedBucket(conn.bucket);
+        } else {
+          loadBuckets();
+        }
       }
     } catch (err) {
       console.error('Failed to load active connection:', err);
@@ -715,8 +721,9 @@ export default function App() {
     setSelectedBucket(null);
     setCurrentPath('');
     setObjects([]);
+    setSearchQuery('');
+    setSearchResults(null);
     loadActiveConnection();
-    loadBuckets();
   };
 
   const breadcrumbs = useMemo(() => currentPath.split('/').filter(Boolean), [currentPath]);

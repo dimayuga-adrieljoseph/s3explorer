@@ -80,6 +80,13 @@ export async function listBuckets(config?: S3ConnectionConfig): Promise<BucketIn
   }));
 }
 
+// Lightweight connectivity test for single-bucket connections (e.g., GCS).
+// ListBuckets isn't available on these providers, so we list one object instead.
+export async function testBucketAccess(config: S3ConnectionConfig, bucket: string): Promise<void> {
+  const client = getS3Client(config);
+  await client.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
+}
+
 export async function createBucket(name: string): Promise<void> {
   const client = getS3Client();
   const command = new CreateBucketCommand({ Bucket: name });

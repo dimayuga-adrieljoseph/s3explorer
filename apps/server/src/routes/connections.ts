@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { connections, ConnectionRecord } from '../services/db.js';
 import { encryptAndPack, unpackAndDecrypt } from '../services/crypto.js';
-import { listBuckets, S3ConnectionConfig } from '../services/s3.js';
+import { listBuckets, testBucketAccess, S3ConnectionConfig } from '../services/s3.js';
 
 const router = Router();
 
@@ -17,6 +17,7 @@ router.get('/', (req: Request, res: Response) => {
       forcePathStyle: !!row.force_path_style,
       isActive: !!row.is_active,
       createdAt: row.created_at,
+      bucket: row.bucket || null,
     }));
     res.json({ connections: sanitized });
   } catch (err: any) {
@@ -40,6 +41,7 @@ router.get('/active', (req: Request, res: Response) => {
         endpoint: row.endpoint,
         region: row.region,
         forcePathStyle: !!row.force_path_style,
+        bucket: row.bucket || null,
       },
     });
   } catch (err: any) {
@@ -52,6 +54,7 @@ router.get('/active', (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { name, endpoint, accessKey, secretKey, region, forcePathStyle } = req.body;
+    const bucket = req.body.bucket?.trim() || null;
 
     if (!name?.trim() || !endpoint?.trim() || !accessKey?.trim() || !secretKey?.trim()) {
       res.status(400).json({ error: 'name, endpoint, accessKey, secretKey required and cannot be empty' });
@@ -77,7 +80,11 @@ router.post('/', async (req: Request, res: Response) => {
     let testPassed = false;
     let testError: string | undefined;
     try {
-      await listBuckets(config);
+      if (bucket) {
+        await testBucketAccess(config, bucket);
+      } else {
+        await listBuckets(config);
+      }
       testPassed = true;
     } catch (testErr: any) {
       testError = testErr.message || 'Connection test failed';
@@ -97,7 +104,8 @@ router.post('/', async (req: Request, res: Response) => {
       region || 'us-east-1',
       accessKeyEnc,
       secretKeyEnc,
-      forcePathStyle ? 1 : 0
+      forcePathStyle ? 1 : 0,
+      bucket
     );
 
     res.json({ success: true, id: result.lastInsertRowid, testPassed, testError });
@@ -116,6 +124,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { name, endpoint, accessKey, secretKey, region, forcePathStyle } = req.body;
+    const bucket = req.body.bucket !== undefined ? (req.body.bucket?.trim() || null) : undefined;
 
     const existing = connections.getById(id);
     if (!existing) {
@@ -139,7 +148,12 @@ router.put('/:id', async (req: Request, res: Response) => {
     let testPassed = false;
     let testError: string | undefined;
     try {
-      await listBuckets(config);
+      const testBucket = bucket !== undefined ? bucket : existing.bucket;
+      if (testBucket) {
+        await testBucketAccess(config, testBucket);
+      } else {
+        await listBuckets(config);
+      }
       testPassed = true;
     } catch (testErr: any) {
       testError = testErr.message || 'Connection test failed';
@@ -159,6 +173,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       accessKeyEnc,
       secretKeyEnc,
       (forcePathStyle ?? !!existing.force_path_style) ? 1 : 0,
+      bucket !== undefined ? bucket : existing.bucket,
       id
     );
 
@@ -231,6 +246,7 @@ router.post('/disconnect', (req: Request, res: Response) => {
 router.post('/test', async (req: Request, res: Response) => {
   try {
     const { endpoint, accessKey, secretKey, region, forcePathStyle } = req.body;
+    const bucket = req.body.bucket?.trim() || null;
 
     if (!endpoint || !accessKey || !secretKey) {
       res.status(400).json({ error: 'endpoint, accessKey, secretKey required' });
@@ -245,8 +261,13 @@ router.post('/test', async (req: Request, res: Response) => {
       forcePathStyle: forcePathStyle ?? true,
     };
 
-    const buckets = await listBuckets(config);
-    res.json({ success: true, bucketCount: buckets.length });
+    if (bucket) {
+      await testBucketAccess(config, bucket);
+      res.json({ success: true, bucketCount: 1 });
+    } else {
+      const buckets = await listBuckets(config);
+      res.json({ success: true, bucketCount: buckets.length });
+    }
   } catch (err: any) {
     res.status(400).json({ error: `Connection failed: ${err.message}` });
   }

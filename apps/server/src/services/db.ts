@@ -56,6 +56,13 @@ db.exec(`
   );
 `);
 
+// Migration: add bucket column for single-bucket connections (e.g., GCS)
+try {
+  db.exec('ALTER TABLE connections ADD COLUMN bucket TEXT');
+} catch {
+  // Column already exists
+}
+
 export default db;
 
 // express-session requires the store to extend its abstract Store class so it can
@@ -123,17 +130,18 @@ export interface ConnectionRecord {
   force_path_style: number;
   is_active: number;
   created_at: string;
+  bucket: string | null;
 }
 
 const connGetAll = db.prepare('SELECT * FROM connections ORDER BY name');
 const connGetById = db.prepare('SELECT * FROM connections WHERE id = ?');
 const connGetActive = db.prepare('SELECT * FROM connections WHERE is_active = 1');
 const connCreate = db.prepare(`
-  INSERT INTO connections (name, endpoint, region, access_key_enc, secret_key_enc, force_path_style)
-  VALUES (?, ?, ?, ?, ?, ?)
+  INSERT INTO connections (name, endpoint, region, access_key_enc, secret_key_enc, force_path_style, bucket)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
 `);
 const connUpdate = db.prepare(`
-  UPDATE connections SET name = ?, endpoint = ?, region = ?, access_key_enc = ?, secret_key_enc = ?, force_path_style = ?
+  UPDATE connections SET name = ?, endpoint = ?, region = ?, access_key_enc = ?, secret_key_enc = ?, force_path_style = ?, bucket = ?
   WHERE id = ?
 `);
 const connDelete = db.prepare('DELETE FROM connections WHERE id = ?');
@@ -150,12 +158,12 @@ export const connections = {
     return row.count;
   },
 
-  create: (name: string, endpoint: string, region: string, accessKeyEnc: string, secretKeyEnc: string, forcePathStyle: number) => {
-    return connCreate.run(name, endpoint, region, accessKeyEnc, secretKeyEnc, forcePathStyle);
+  create: (name: string, endpoint: string, region: string, accessKeyEnc: string, secretKeyEnc: string, forcePathStyle: number, bucket: string | null) => {
+    return connCreate.run(name, endpoint, region, accessKeyEnc, secretKeyEnc, forcePathStyle, bucket);
   },
 
-  update: (name: string, endpoint: string, region: string, accessKeyEnc: string, secretKeyEnc: string, forcePathStyle: number, id: number) => {
-    return connUpdate.run(name, endpoint, region, accessKeyEnc, secretKeyEnc, forcePathStyle, id);
+  update: (name: string, endpoint: string, region: string, accessKeyEnc: string, secretKeyEnc: string, forcePathStyle: number, bucket: string | null, id: number) => {
+    return connUpdate.run(name, endpoint, region, accessKeyEnc, secretKeyEnc, forcePathStyle, bucket, id);
   },
 
   delete: (id: number) => connDelete.run(id),

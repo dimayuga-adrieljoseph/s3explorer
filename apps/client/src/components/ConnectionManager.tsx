@@ -7,6 +7,7 @@ import { Modal } from './Modal';
 // Provider Presets
 const PROVIDERS = [
   { id: 'aws', name: 'Amazon S3', defaultRegion: 'us-east-1', defaultEndpoint: '' },
+  { id: 'gcs', name: 'Google Cloud Storage', defaultRegion: 'auto', defaultEndpoint: 'https://storage.googleapis.com' },
   { id: 'cloudflare', name: 'Cloudflare R2', defaultRegion: 'auto', defaultEndpoint: 'https://<accountid>.r2.cloudflarestorage.com' },
   { id: 'digitalocean', name: 'DigitalOcean Spaces', defaultRegion: 'nyc3', defaultEndpoint: 'https://nyc3.digitaloceanspaces.com' },
   { id: 'railway', name: 'Railway Buckets', defaultRegion: 'us-west-1', defaultEndpoint: 'http://localhost:4444' },
@@ -66,6 +67,16 @@ const R2_REGIONS = [
   { value: 'apac', label: 'Asia Pacific' },
 ];
 
+// Google Cloud Storage Regions
+const GCS_REGIONS = [
+  { value: 'auto', label: 'Auto (Recommended)' },
+  { value: 'us-east1', label: 'US East (South Carolina)' },
+  { value: 'us-central1', label: 'US Central (Iowa)' },
+  { value: 'us-west1', label: 'US West (Oregon)' },
+  { value: 'europe-west1', label: 'Europe West (Belgium)' },
+  { value: 'asia-east1', label: 'Asia East (Taiwan)' },
+];
+
 // DigitalOcean Spaces Regions
 const DO_REGIONS = [
   { value: 'nyc3', label: 'New York (NYC3)' },
@@ -90,6 +101,8 @@ function getRegionsForProvider(providerId: string) {
   switch (providerId) {
     case 'aws':
       return AWS_REGIONS;
+    case 'gcs':
+      return GCS_REGIONS;
     case 'cloudflare':
       return R2_REGIONS;
     case 'digitalocean':
@@ -128,6 +141,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
     secretKey: '',
     region: 'us-east-1',
     forcePathStyle: true,
+    bucket: '',
   });
 
   useEffect(() => {
@@ -167,6 +181,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
       secretKey: '',
       region: 'us-east-1',
       forcePathStyle: true,
+      bucket: '',
     });
     setEditingId(null);
     setSelectedProvider('custom');
@@ -184,7 +199,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
         region: provider.defaultRegion,
         endpoint: provider.defaultEndpoint,
         // Cloudflare/DO/MinIO often need path style
-        forcePathStyle: providerId === 'minio' || providerId === 'railway',
+        forcePathStyle: providerId === 'minio' || providerId === 'railway' || providerId === 'gcs',
       }));
     }
   }
@@ -213,6 +228,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
         secretKey: form.secretKey,
         region: form.region,
         forcePathStyle: form.forcePathStyle,
+        bucket: form.bucket || undefined,
       });
       setTestResult({ success: true, message: `Connection successful! Found ${result.bucketCount} bucket${result.bucketCount !== 1 ? 's' : ''}.` });
     } catch (err: any) {
@@ -279,6 +295,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
       secretKey: '',
       region: conn.region,
       forcePathStyle: conn.forcePathStyle,
+      bucket: conn.bucket || '',
     });
     setEditingId(conn.id);
     setSelectedProvider('custom'); // Or try to infer from endpoint? Keeping simple for now.
@@ -367,6 +384,7 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                           </div>
                           <p className="text-[11px] text-foreground-muted font-mono truncate mt-0.5" title={conn.endpoint}>
                             {conn.endpoint || 'https://s3.amazonaws.com'}
+                            {conn.bucket && <span className="text-accent-purple"> / {conn.bucket}</span>}
                           </p>
                         </div>
                       </div>
@@ -467,6 +485,23 @@ export function ConnectionManager({ isOpen, onClose, onConnectionChange }: Conne
                     onChange={(e) => setForm({ ...form, endpoint: e.target.value })}
                     placeholder="https://s3.amazonaws.com…"
                     className="input font-mono h-9 text-sm"
+                    autoComplete="off"
+                    spellCheck="false"
+                  />
+                </div>
+
+                {/* Bucket Name - required for single-bucket providers like GCS */}
+                <div className="space-y-1.5">
+                  <label htmlFor="conn-bucket" className="text-xs text-foreground-muted leading-none block">
+                    Bucket Name {selectedProvider !== 'gcs' && <span className="opacity-50">(optional)</span>}
+                  </label>
+                  <input
+                    id="conn-bucket"
+                    type="text"
+                    value={form.bucket || ''}
+                    onChange={(e) => setForm({ ...form, bucket: e.target.value })}
+                    placeholder={selectedProvider === 'gcs' ? 'my-bucket-name' : 'Leave empty to list all buckets'}
+                    className="input h-9 text-sm"
                     autoComplete="off"
                     spellCheck="false"
                   />
