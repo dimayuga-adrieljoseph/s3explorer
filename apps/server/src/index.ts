@@ -7,13 +7,15 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
-import { SQLiteStore, preferences } from './services/db.js';
+import { SQLiteStore, preferences, connections } from './services/db.js';
 import { requireAuth } from './middleware/auth.js';
 import authRouter from './routes/auth.js';
 import bucketsRouter from './routes/buckets.js';
 import objectsRouter from './routes/objects.js';
 import connectionsRouter from './routes/connections.js';
 import setupRouter from './routes/setup.js';
+import { encryptAndPack } from './services/crypto.js';
+import { createBucket } from './services/s3.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -129,6 +131,63 @@ if (fs.existsSync(publicPath)) {
 } else {
   console.log(`Static files not found at ${publicPath} (Running in API-only/Dev mode)`);
 }
+
+// Auto-configure a connection from environment variables when S3 credentials are
+// provided at deploy time (e.g., Railway environment variables). This lets the app
+// start fully connected without requiring the user to go through the UI setup wizard.
+async function initEnvConnection(): Promise<void> {
+  const bucket = process.env.BUCKET;
+  const endpoint = process.env.ENDPOINT;
+  const accessKeyId = process.env.ACCESS_KEY_ID;
+  const secretAccessKey = process.env.SECRET_ACCESS_KEY;
+  const region = process.env.REGION || 'us-east-1';
+
+  if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+    return; // No env-based connection configured
+  }
+
+  const ENV_CONN_NAME = 'env-default';
+
+  // Check if an env-based connection already exists and is active
+  const existing = connections.getAll().find(c => c.name === ENV_CONN_NAME);
+  if (existing) {
+    if (!existing.is_active) {
+      connections.setActive(existing.id);
+    }
+    console.log('S3: Using existing env-based connection');
+    return;
+  }
+
+  console.log(`S3: Initializing connection from environment variables (bucket: ${bucket})`);
+
+  const accessKeyEnc = encryptAndPack(accessKeyId);
+  const secretKeyEnc = encryptAndPack(secretAccessKey);
+
+  const result = connections.create(
+    ENV_CONN_NAME,
+    endpoint,
+    region,
+    accessKeyEnc,
+    secretKeyEnc,
+    1, // forcePathStyle
+    bucket
+  );
+
+  const newId = result.lastInsertRowid as number;
+  connections.setActive(newId);
+
+  // Ensure the bucket exists — createBucket handles BucketAlreadyExists gracefully
+  try {
+    await createBucket(bucket);
+    console.log(`S3: Bucket "${bucket}" is ready`);
+  } catch (err: any) {
+    console.warn(`S3: Could not create bucket "${bucket}":`, err.message);
+  }
+}
+
+initEnvConnection().catch(err => {
+  console.error('S3: Failed to initialize env-based connection:', err);
+});
 
 app.listen(PORT, () => {
   console.log(`S3 Explorer running on http://localhost:${PORT}`);
