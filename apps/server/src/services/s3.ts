@@ -90,7 +90,18 @@ export async function testBucketAccess(config: S3ConnectionConfig, bucket: strin
 export async function createBucket(name: string): Promise<void> {
   const client = getS3Client();
   const command = new CreateBucketCommand({ Bucket: name });
-  await client.send(command);
+  try {
+    await client.send(command);
+  } catch (err: any) {
+    // BucketAlreadyOwnedByYou: bucket exists and belongs to this account — treat as success.
+    // BucketAlreadyExists: bucket name is taken (possibly by another account) — also a 409.
+    // Both cases mean the bucket is already present, so we can proceed normally.
+    const code = err.name || err.Code || err.code;
+    if (code === 'BucketAlreadyOwnedByYou' || code === 'BucketAlreadyExists') {
+      return;
+    }
+    throw err;
+  }
 }
 
 // S3 won't let you delete a bucket that still has objects. We drain it first
